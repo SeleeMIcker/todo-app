@@ -1,3 +1,12 @@
+# Todo App
+
+A React-based todo list application with Pomodoro timer functionality, built with Vite.
+
+## Features
+- Todo list management
+- Pomodoro timer for focused work sessions
+- Modern React with Vite for fast development
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
