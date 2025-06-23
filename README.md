@@ -7,6 +7,11 @@ A React-based todo list application with Pomodoro timer functionality, built wit
 - Pomodoro timer for focused work sessions
 - Modern React with Vite for fast development
 
+## Deployment Status
+🚀 **Live Demo**: [https://seleemicker.github.io/todo-app/](https://seleemicker.github.io/todo-app/)
+
+This app is automatically deployed to GitHub Pages using GitHub Actions.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
