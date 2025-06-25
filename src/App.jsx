@@ -42,9 +42,6 @@ function App() {
   const [draggedTask, setDraggedTask] = useState(null)
   const [draggedFrom, setDraggedFrom] = useState(null)
 
-  // Side menu state
-  const [sideMenuOpen, setSideMenuOpen] = useState(false)
-
   // Timetable mode state
   const [timetableMode, setTimetableMode] = useState('day') // 'day' or 'night'
 
@@ -141,10 +138,6 @@ function App() {
     })
   }
 
-  const sortEventsByTime = (events) => {
-    return events.sort((a, b) => a.time.localeCompare(b.time))
-  }
-
   // Generate time slots based on mode
   const generateTimeSlots = () => {
     const slots = []
@@ -203,21 +196,6 @@ function App() {
       ...prev,
       [quadrant]: prev[quadrant].filter(t => t.id !== id)
     }))
-  }
-
-  // Side menu links
-  const menuLinks = [
-    { key: 'todos', label: '📝 Todos' },
-    { key: 'timetable', label: '📅 Weekly Timetable' },
-    { key: 'goals', label: '🎯 Goals' },
-    { key: 'focus', label: '⏳ Focus' },
-  ]
-
-  // Side menu close on overlay click
-  const handleOverlayClick = (e) => {
-    if (e.target.classList.contains('side-menu-overlay')) {
-      setSideMenuOpen(false)
-    }
   }
 
   // Move todo to matrix
@@ -330,6 +308,27 @@ function App() {
 
               {/* Eisenhower Matrix below To-Do List */}
               <div className="eisenhower-matrix" style={{marginTop: 40}}>
+                <div className="matrix-input-section">
+                  <input
+                    type="text"
+                    value={matrixInput}
+                    onChange={(e) => setMatrixInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && matrixInput.trim() !== '') {
+                        addMatrixTask()
+                      }
+                    }}
+                    placeholder="Add a task to the matrix..."
+                    className="matrix-input"
+                  />
+                  <button 
+                    onClick={addMatrixTask} 
+                    className="add-button"
+                    disabled={matrixInput.trim() === ''}
+                  >
+                    Add to Matrix
+                  </button>
+                </div>
                 <div className="matrix-row">
                   <div
                     className="matrix-quadrant"

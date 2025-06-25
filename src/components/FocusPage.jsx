@@ -22,7 +22,7 @@ const FocusPage = ({ todos }) => {
       </div>
       {selectedTodo && (
         <div style={{ marginBottom: 24 }}>
-          <strong>Focusing on:</strong> {todos.find(t => t.id == selectedTodo)?.text}
+          <strong>Focusing on:</strong> {todos.find(t => t.id === parseInt(selectedTodo))?.text}
         </div>
       )}
       <div style={{ marginTop: 32 }}>
