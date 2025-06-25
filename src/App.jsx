@@ -1,26 +1,31 @@
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import './App.css'
 import FocusPage from './components/FocusPage'
+import PomodoroTimer from './components/PomodoroTimer'
+import { useTaskStore } from './contexts/TaskStore.jsx'
 
 function App() {
+  // Task store
+  const { 
+    tasks, 
+    addTask, 
+    updateTask, 
+    deleteTask, 
+    getTasksByDay 
+  } = useTaskStore()
+
+  // Local state
   const [activeTab, setActiveTab] = useState('todos')
   const [todos, setTodos] = useState([])
   const [inputValue, setInputValue] = useState('')
+  const [todoDuration, setTodoDuration] = useState('1') // Default 1 hour
   const [goals, setGoals] = useState([])
   const [goalInput, setGoalInput] = useState('')
   const [goalDeadline, setGoalDeadline] = useState('')
-  const [timetable, setTimetable] = useState({
-    monday: [],
-    tuesday: [],
-    wednesday: [],
-    thursday: [],
-    friday: [],
-    saturday: [],
-    sunday: []
-  })
   const [newEvent, setNewEvent] = useState({
     day: 'monday',
-    time: '09:00',
+    startTime: '06:00',
+    endTime: '07:00',
     title: '',
     description: ''
   })
@@ -45,9 +50,16 @@ function App() {
   // Timetable mode state
   const [timetableMode, setTimetableMode] = useState('day') // 'day' or 'night'
 
-  // Notepad state
-  const [notepad, setNotepad] = useState(() => localStorage.getItem('notepad') || '')
-  useEffect(() => { localStorage.setItem('notepad', notepad) }, [notepad])
+  // Goals view mode state
+  const [goalViewMode, setGoalViewMode] = useState('checklist') // 'checklist' or 'timeline'
+
+  // Goal management state
+  const [selectedGoalId, setSelectedGoalId] = useState(null)
+  const [goalManagementMode, setGoalManagementMode] = useState('list') // 'list' or 'detail'
+
+  // Goal editing state
+  const [editingSubTask, setEditingSubTask] = useState(null)
+  const [newSubTaskText, setNewSubTaskText] = useState('')
 
   // Todo functions
   const addTodo = () => {
@@ -56,9 +68,11 @@ function App() {
         id: Date.now(),
         text: inputValue,
         completed: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        duration: parseInt(todoDuration) || 1
       }])
       setInputValue('')
+      setTodoDuration('1')
     }
   }
 
@@ -70,6 +84,14 @@ function App() {
 
   const deleteTodo = (id) => {
     setTodos(todos.filter(todo => todo.id !== id))
+    
+    // Also remove from matrix if it exists there
+    setMatrixTasks(prev => ({
+      doFirst: prev.doFirst.filter(t => t.id !== id),
+      schedule: prev.schedule.filter(t => t.id !== id),
+      delegate: prev.delegate.filter(t => t.id !== id),
+      eliminate: prev.eliminate.filter(t => t.id !== id)
+    }))
   }
 
   const handleKeyPress = (e) => {
@@ -81,86 +103,177 @@ function App() {
   // Goal functions
   const addGoal = () => {
     if (goalInput.trim() !== '' && goalDeadline !== '') {
-      setGoals([...goals, {
+      const newGoal = {
         id: Date.now(),
         title: goalInput,
         deadline: goalDeadline,
         completed: false,
         progress: 0,
-        createdAt: new Date().toISOString()
-      }])
+        createdAt: new Date().toISOString(),
+        // Sub-tasks for checklist view (user-defined)
+        subTasks: [],
+        // Milestones for timeline view (default structure)
+        milestones: [
+          { id: 1, text: 'Start the journey', completed: false, completedAt: null },
+          { id: 2, text: 'Make first progress', completed: false, completedAt: null },
+          { id: 3, text: 'Reach halfway point', completed: false, completedAt: null },
+          { id: 4, text: 'Almost there', completed: false, completedAt: null },
+          { id: 5, text: 'Goal achieved!', completed: false, completedAt: null }
+        ]
+      }
+      setGoals([...goals, newGoal])
       setGoalInput('')
       setGoalDeadline('')
     }
-  }
-
-  const toggleGoal = (id) => {
-    setGoals(goals.map(goal => 
-      goal.id === id ? { ...goal, completed: !goal.completed } : goal
-    ))
-  }
-
-  const updateGoalProgress = (id, progress) => {
-    setGoals(goals.map(goal => 
-      goal.id === id ? { ...goal, progress: Math.min(100, Math.max(0, progress)) } : goal
-    ))
   }
 
   const deleteGoal = (id) => {
     setGoals(goals.filter(goal => goal.id !== id))
   }
 
+  // Enhanced goal functions for milestones and sub-tasks
+  const toggleMilestone = (goalId, milestoneId) => {
+    setGoals(goals.map(goal => {
+      if (goal.id === goalId) {
+        const updatedMilestones = goal.milestones.map(milestone => {
+          if (milestone.id === milestoneId) {
+            return {
+              ...milestone,
+              completed: !milestone.completed,
+              completedAt: !milestone.completed ? new Date().toISOString() : null
+            }
+          }
+          return milestone
+        })
+        
+        // Calculate progress based on completed milestones
+        const completedMilestones = updatedMilestones.filter(m => m.completed).length
+        const progress = Math.round((completedMilestones / updatedMilestones.length) * 100)
+        
+        return {
+          ...goal,
+          milestones: updatedMilestones,
+          progress: progress
+        }
+      }
+      return goal
+    }))
+  }
+
+  const toggleSubTask = (goalId, subTaskId) => {
+    setGoals(goals.map(goal => {
+      if (goal.id === goalId) {
+        const updatedSubTasks = goal.subTasks.map(subTask => {
+          if (subTask.id === subTaskId) {
+            return {
+              ...subTask,
+              completed: !subTask.completed,
+              completedAt: !subTask.completed ? new Date().toISOString() : null
+            }
+          }
+          return subTask
+        })
+        
+        // Calculate progress based only on completed sub-tasks (not milestones)
+        const completedSubTasks = updatedSubTasks.filter(st => st.completed).length
+        const progress = updatedSubTasks.length > 0 ? Math.round((completedSubTasks / updatedSubTasks.length) * 100) : 0
+        
+        return {
+          ...goal,
+          subTasks: updatedSubTasks,
+          progress: progress
+        }
+      }
+      return goal
+    }))
+  }
+
+  // Enhanced functions for editable sub-tasks and milestones
+  const addSubTask = (goalId) => {
+    if (newSubTaskText.trim() !== '') {
+      setGoals(goals.map(goal => {
+        if (goal.id === goalId) {
+          const newSubTask = {
+            id: Date.now() + Math.random(),
+            text: newSubTaskText.trim(),
+            completed: false,
+            completedAt: null
+          }
+          const updatedSubTasks = [...goal.subTasks, newSubTask]
+          
+          // Recalculate progress
+          const completedSubTasks = updatedSubTasks.filter(st => st.completed).length
+          const progress = updatedSubTasks.length > 0 ? Math.round((completedSubTasks / updatedSubTasks.length) * 100) : 0
+          
+          return {
+            ...goal,
+            subTasks: updatedSubTasks,
+            progress: progress
+          }
+        }
+        return goal
+      }))
+      setNewSubTaskText('')
+    }
+  }
+
+  const editSubTask = (goalId, subTaskId, newText) => {
+    if (newText.trim() !== '') {
+      setGoals(goals.map(goal => {
+        if (goal.id === goalId) {
+          const updatedSubTasks = goal.subTasks.map(subTask => {
+            if (subTask.id === subTaskId) {
+              return { ...subTask, text: newText.trim() }
+            }
+            return subTask
+          })
+          return { ...goal, subTasks: updatedSubTasks }
+        }
+        return goal
+      }))
+      setEditingSubTask(null)
+    }
+  }
+
+  const deleteSubTask = (goalId, subTaskId) => {
+    setGoals(goals.map(goal => {
+      if (goal.id === goalId) {
+        const updatedSubTasks = goal.subTasks.filter(subTask => subTask.id !== subTaskId)
+        
+        // Recalculate progress
+        const completedSubTasks = updatedSubTasks.filter(st => st.completed).length
+        const progress = updatedSubTasks.length > 0 ? Math.round((completedSubTasks / updatedSubTasks.length) * 100) : 0
+        
+        return {
+          ...goal,
+          subTasks: updatedSubTasks,
+          progress: progress
+        }
+      }
+      return goal
+    }))
+  }
+
   // Timetable functions
   const addEvent = () => {
-    if (newEvent.title.trim() !== '') {
-      setTimetable({
-        ...timetable,
-        [newEvent.day]: [...timetable[newEvent.day], {
-          id: Date.now(),
-          time: newEvent.time,
-          title: newEvent.title,
-          description: newEvent.description
-        }]
-      })
+    if (newEvent.title.trim() !== '' && newEvent.startTime < newEvent.endTime) {
+      const event = {
+        title: newEvent.title,
+        description: newEvent.description,
+        startTime: newEvent.startTime,
+        endTime: newEvent.endTime,
+        day: newEvent.day,
+        color: '#4CAF50'
+      }
+      addTask(event)
       setNewEvent({
         day: 'monday',
-        time: '09:00',
+        startTime: '06:00',
+        endTime: '07:00',
         title: '',
         description: ''
       })
     }
-  }
-
-  const deleteEvent = (day, eventId) => {
-    setTimetable({
-      ...timetable,
-      [day]: timetable[day].filter(event => event.id !== eventId)
-    })
-  }
-
-  // Generate time slots based on mode
-  const generateTimeSlots = () => {
-    const slots = []
-    if (timetableMode === 'night') {
-      for (let hour = 23; hour < 24; hour++) {
-        slots.push(`${hour.toString().padStart(2, '0')}:00`)
-      }
-      for (let hour = 0; hour <= 5; hour++) {
-        slots.push(`${hour.toString().padStart(2, '0')}:00`)
-      }
-    } else {
-      for (let hour = 6; hour <= 22; hour++) {
-        slots.push(`${hour.toString().padStart(2, '0')}:00`)
-      }
-    }
-    return slots
-  }
-  const timeSlots = generateTimeSlots()
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-
-  // Get events for a specific day and time slot
-  const getEventsForTimeSlot = (day, timeSlot) => {
-    return timetable[day].filter(event => event.time === timeSlot)
   }
 
   // Eisenhower Matrix functions
@@ -196,29 +309,120 @@ function App() {
       ...prev,
       [quadrant]: prev[quadrant].filter(t => t.id !== id)
     }))
+    
+    // Reset the sentToMatrix status of the corresponding todo
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, sentToMatrix: false } : todo
+    ))
   }
 
   // Move todo to matrix
   const sendTodoToMatrix = (todo) => {
-    setTodos(todos.filter(t => t.id !== todo.id))
+    // Instead of removing the todo, mark it as sent to matrix
+    setTodos(todos.map(t => 
+      t.id === todo.id ? { ...t, sentToMatrix: true } : t
+    ))
     setMatrixTasks(prev => ({
       ...prev,
       doFirst: [...prev.doFirst, { id: todo.id, text: todo.text }]
     }))
   }
 
+  // Goal management functions
+  const focusOnGoal = (goalId) => {
+    setSelectedGoalId(goalId)
+    setGoalManagementMode('detail')
+  }
+
+  const backToGoalList = () => {
+    setGoalManagementMode('list')
+    setSelectedGoalId(null)
+  }
+
+  const getSelectedGoal = () => {
+    return goals.find(goal => goal.id === selectedGoalId)
+  }
+
+  const handleDrop = (e, day, timeSlot) => {
+    e.preventDefault()
+    const eventData = JSON.parse(e.dataTransfer.getData('text/plain'))
+    
+    const getEndTime = (start, duration) => {
+      const idx = timeSlots.indexOf(start)
+      const endIdx = idx + Math.max(1, Math.round((duration || 1)))
+      return timeSlots[endIdx] || timeSlots[timeSlots.length - 1]
+    }
+
+    if (eventData.type === 'todo') {
+      const todo = todos.find(t => t.id === eventData.id)
+      if (todo) {
+        const duration = todo.duration || 1
+        const endTime = getEndTime(timeSlot, duration)
+        const newEvent = {
+          title: todo.text,
+          description: todo.description,
+          startTime: timeSlot,
+          endTime,
+          day: day,
+          color: '#4CAF50'
+        }
+        addTask(newEvent)
+      }
+    } else if (eventData.type === 'timetable') {
+      const event = tasks.find(e => e.id === eventData.id)
+      if (event) {
+        const duration = timeSlots.indexOf(event.endTime) - timeSlots.indexOf(event.startTime)
+        const endTime = getEndTime(timeSlot, duration)
+        updateTask(event.id, { day, startTime: timeSlot, endTime })
+      }
+    } else if (eventData.type === 'pool') {
+      // Schedule a pool task
+      updateTask(eventData.id, { day, startTime: timeSlot })
+    }
+  }
+
+  const onTodoDragStart = (e, todo) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      type: 'todo',
+      id: todo.id
+    }))
+  }
+
+  const handleDragStart = (e, event) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      type: 'timetable',
+      id: event.id
+    }))
+  }
+
+  const handleDeleteTask = (eventId) => {
+    deleteTask(eventId)
+  }
+
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+
+  // Generate time slots based on mode
+  const generateTimeSlots = () => {
+    const slots = []
+    if (timetableMode === 'night') {
+      for (let hour = 23; hour < 24; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`)
+      }
+      for (let hour = 0; hour <= 5; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`)
+      }
+    } else {
+      for (let hour = 6; hour <= 22; hour++) {
+        slots.push(`${hour.toString().padStart(2, '0')}:00`)
+      }
+    }
+    return slots
+  }
+  const timeSlots = generateTimeSlots()
+
   return (
     <div className="app">
       <div className="layout">
-        <div className="notepad-panel">
-          <h2>Notepad</h2>
-          <textarea
-            className="notepad-textarea"
-            value={notepad}
-            onChange={e => setNotepad(e.target.value)}
-            placeholder="Take notes here..."
-          />
-        </div>
         <div className="main-content">
           <h1>Productivity Hub</h1>
           
@@ -261,6 +465,20 @@ function App() {
                   placeholder="Add a new todo..."
                   className="todo-input"
                 />
+                <select
+                  value={todoDuration}
+                  onChange={(e) => setTodoDuration(e.target.value)}
+                  className="duration-select"
+                >
+                  <option value="0.5">30 min</option>
+                  <option value="1">1 hour</option>
+                  <option value="1.5">1.5 hours</option>
+                  <option value="2">2 hours</option>
+                  <option value="3">3 hours</option>
+                  <option value="4">4 hours</option>
+                  <option value="6">6 hours</option>
+                  <option value="8">8 hours</option>
+                </select>
                 <button onClick={addTodo} className="add-button">
                   Add
                 </button>
@@ -271,14 +489,22 @@ function App() {
                   <p className="empty-message">No todos yet. Add one above!</p>
                 ) : (
                   todos.map(todo => (
-                    <div key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                    <div
+                      key={todo.id}
+                      className={`todo-item ${todo.completed ? 'completed' : ''} ${todo.sentToMatrix ? 'sent-to-matrix' : ''}`}
+                      draggable={!todo.completed}
+                      onDragStart={(e) => onTodoDragStart(e, todo)}
+                    >
                       <input
                         type="checkbox"
                         checked={todo.completed}
                         onChange={() => toggleTodo(todo.id)}
                         className="todo-checkbox"
                       />
-                      <span className="todo-text">{todo.text}</span>
+                      <div className="todo-content">
+                        <span className="todo-text">{todo.text}</span>
+                        <span className="todo-duration">{todo.duration} hour{todo.duration !== 1 ? 's' : ''}</span>
+                      </div>
                       <span className="todo-date">
                         {new Date(todo.createdAt).toLocaleDateString()}
                       </span>
@@ -288,13 +514,19 @@ function App() {
                       >
                         Delete
                       </button>
-                      <button
-                        className="add-button send-to-matrix"
-                        onClick={() => sendTodoToMatrix(todo)}
-                        title="Send to Eisenhower Matrix"
-                      >
-                        ➡️ Matrix
-                      </button>
+                      {!todo.sentToMatrix ? (
+                        <button
+                          className="add-button send-to-matrix"
+                          onClick={() => sendTodoToMatrix(todo)}
+                          title="Send to Eisenhower Matrix"
+                        >
+                          ➡️ Matrix
+                        </button>
+                      ) : (
+                        <span className="matrix-indicator" title="Already in Matrix">
+                          ✅ In Matrix
+                        </span>
+                      )}
                     </div>
                   ))
                 )}
@@ -431,8 +663,8 @@ function App() {
                 </button>
               </div>
               <div className="timetable-input">
-                <select 
-                  value={newEvent.day} 
+                <select
+                  value={newEvent.day}
                   onChange={(e) => setNewEvent({...newEvent, day: e.target.value})}
                   className="day-select"
                 >
@@ -442,12 +674,24 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <input
-                  type="time"
-                  value={newEvent.time}
-                  onChange={(e) => setNewEvent({...newEvent, time: e.target.value})}
-                  className="time-input"
-                />
+                <select
+                  value={newEvent.startTime}
+                  onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                  className="start-time-select"
+                >
+                  {timeSlots.map(slot => (
+                    <option key={slot} value={slot}>{slot}</option>
+                  ))}
+                </select>
+                <select
+                  value={newEvent.endTime}
+                  onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                  className="end-time-select"
+                >
+                  {timeSlots.map(slot => (
+                    <option key={slot} value={slot}>{slot}</option>
+                  ))}
+                </select>
                 <input
                   type="text"
                   value={newEvent.title}
@@ -469,39 +713,81 @@ function App() {
 
               <div className="timetable-container">
                 <div className="timetable-header">
-                  <div className="time-column-header">Time</div>
+                  <div className="time-column-header"></div>
                   {days.map(day => (
                     <div key={day} className="day-header">
                       {day.charAt(0).toUpperCase() + day.slice(1)}
                     </div>
                   ))}
                 </div>
-                
-                <div className="timetable-body">
-                  {timeSlots.map(timeSlot => (
-                    <div key={timeSlot} className="time-row">
-                      <div className="time-slot">{timeSlot}</div>
+                <div className="timetable-grid">
+                  {timeSlots.map((timeSlot, timeIndex) => (
+                    <React.Fragment key={timeSlot}>
+                      <div className="time-slot-header">{timeSlot}</div>
                       {days.map(day => (
-                        <div key={`${day}-${timeSlot}`} className="day-cell">
-                          {getEventsForTimeSlot(day, timeSlot).map(event => (
-                            <div key={event.id} className="event-item">
-                              <div className="event-content">
-                                <div className="event-title">{event.title}</div>
-                                {event.description && (
-                                  <div className="event-description">{event.description}</div>
-                                )}
-                              </div>
-                              <button 
-                                onClick={() => deleteEvent(day, event.id)}
-                                className="delete-button small"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
+                        <div
+                          key={`${day}-${timeSlot}`}
+                          className="timetable-cell"
+                          onDrop={(e) => handleDrop(e, day, timeSlot)}
+                          onDragOver={(e) => e.preventDefault()}
+                        >
+                          {getTasksByDay(day)
+                            .filter(event => {
+                              const eventStartIndex = timeSlots.indexOf(event.startTime)
+                              const eventEndIndex = timeSlots.indexOf(event.endTime)
+                              return timeIndex >= eventStartIndex && timeIndex < eventEndIndex
+                            })
+                            .map(event => {
+                              const eventStartIndex = timeSlots.indexOf(event.startTime)
+                              if (timeIndex !== eventStartIndex) return null
+                              // Calculate height based on slot difference
+                              const slotDiff = timeSlots.indexOf(event.endTime) - eventStartIndex
+                              return (
+                                <div
+                                  key={event.id}
+                                  className="timetable-event"
+                                  style={{
+                                    height: `${slotDiff * 60}px`,
+                                    backgroundColor: event.color || '#4CAF50',
+                                    position: 'absolute',
+                                    top: '2px',
+                                    left: '2px',
+                                    right: '2px',
+                                    zIndex: 10
+                                  }}
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, event)}
+                                >
+                                  <div className="event-title">{event.title}</div>
+                                  <div className="event-duration">{event.startTime} - {event.endTime}</div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeleteTask(event.id)
+                                    }}
+                                    className="delete-button small"
+                                    style={{
+                                      position: 'absolute',
+                                      top: '2px',
+                                      right: '2px',
+                                      background: 'rgba(255,255,255,0.2)',
+                                      border: 'none',
+                                      borderRadius: '50%',
+                                      width: '16px',
+                                      height: '16px',
+                                      fontSize: '10px',
+                                      cursor: 'pointer',
+                                      color: 'white'
+                                    }}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              )
+                            })}
                         </div>
                       ))}
-                    </div>
+                    </React.Fragment>
                   ))}
                 </div>
               </div>
@@ -511,89 +797,267 @@ function App() {
           {/* Goals Tab */}
           {activeTab === 'goals' && (
             <div className="tab-content">
-              <div className="goals-input">
-                <input
-                  type="text"
-                  value={goalInput}
-                  onChange={(e) => setGoalInput(e.target.value)}
-                  placeholder="Enter your goal..."
-                  className="goal-input"
-                />
-                <input
-                  type="date"
-                  value={goalDeadline}
-                  onChange={(e) => setGoalDeadline(e.target.value)}
-                  className="deadline-input"
-                />
-                <button onClick={addGoal} className="add-button">
-                  Add Goal
-                </button>
-              </div>
-
-              <div className="goals-list">
-                {goals.length === 0 ? (
-                  <p className="empty-message">No goals set yet. Set your first goal above!</p>
-                ) : (
-                  goals.map(goal => (
-                    <div key={goal.id} className={`goal-item ${goal.completed ? 'completed' : ''}`}>
-                      <div className="goal-header">
-                        <input
-                          type="checkbox"
-                          checked={goal.completed}
-                          onChange={() => toggleGoal(goal.id)}
-                          className="goal-checkbox"
-                        />
-                        <div className="goal-info">
-                          <div className="goal-title">{goal.title}</div>
-                          <div className="goal-deadline">
-                            Deadline: {new Date(goal.deadline).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <button 
-                          onClick={() => deleteGoal(goal.id)}
-                          className="delete-button"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      
-                      {!goal.completed && (
-                        <div className="progress-section">
-                          <div className="progress-bar">
-                            <div 
-                              className="progress-fill" 
-                              style={{width: `${goal.progress}%`}}
-                            ></div>
-                          </div>
-                          <div className="progress-controls">
-                            <button 
-                              onClick={() => updateGoalProgress(goal.id, goal.progress - 10)}
-                              className="progress-btn"
-                            >
-                              -10%
-                            </button>
-                            <span className="progress-text">{goal.progress}%</span>
-                            <button 
-                              onClick={() => updateGoalProgress(goal.id, goal.progress + 10)}
-                              className="progress-btn"
-                            >
-                              +10%
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
+              {/* Goal Management Header */}
+              <div className="goal-management-header">
+                <h2>🎯 Goal Management</h2>
+                {goalManagementMode === 'detail' && (
+                  <button onClick={backToGoalList} className="back-btn">
+                    ← Back to Goals
+                  </button>
                 )}
               </div>
 
-              {goals.length > 0 && (
-                <div className="stats">
-                  <p>
-                    Total Goals: {goals.length} | 
-                    Completed: {goals.filter(goal => goal.completed).length} | 
-                    Average Progress: {Math.round(goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length)}%
-                  </p>
+              {/* Goal List View */}
+              {goalManagementMode === 'list' && (
+                <div className="goal-list-view">
+                  <div className="goal-actions">
+                    <div className="goal-input-section">
+                      <input
+                        type="text"
+                        value={goalInput}
+                        onChange={(e) => setGoalInput(e.target.value)}
+                        placeholder="Enter your goal..."
+                        className="goal-input"
+                      />
+                      <input
+                        type="date"
+                        value={goalDeadline}
+                        onChange={(e) => setGoalDeadline(e.target.value)}
+                        className="deadline-input"
+                      />
+                      <button onClick={addGoal} className="add-button">
+                        Add Goal
+                      </button>
+                    </div>
+                    <button className="ai-assistant-btn">
+                      🤖 AI Goal Assistant
+                    </button>
+                  </div>
+
+                  <div className="goals-grid">
+                    {goals.length === 0 ? (
+                      <p className="empty-message">No goals set yet. Create your first goal above!</p>
+                    ) : (
+                      goals.map(goal => (
+                        <div key={goal.id} className={`goal-card ${selectedGoalId === goal.id ? 'selected' : ''}`}>
+                          <div className="goal-card-header">
+                            <h3>{goal.title}</h3>
+                            <div className="goal-card-actions">
+                              <button 
+                                onClick={() => focusOnGoal(goal.id)}
+                                className="focus-btn"
+                                title="Focus on this goal"
+                              >
+                                🎯 Focus
+                              </button>
+                              <button 
+                                onClick={() => deleteGoal(goal.id)}
+                                className="delete-btn"
+                                title="Delete goal"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="goal-card-info">
+                            <div className="goal-deadline">
+                              Deadline: {new Date(goal.deadline).toLocaleDateString()}
+                            </div>
+                            <div className="goal-progress">
+                              Progress: {goal.progress}%
+                              <div className="progress-bar">
+                                <div 
+                                  className="progress-fill" 
+                                  style={{width: `${goal.progress}%`}}
+                                ></div>
+                              </div>
+                            </div>
+                            <div className="goal-stats">
+                              Sub-tasks: {goal.subTasks.filter(st => st.completed).length}/{goal.subTasks.length} done
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {goals.length > 0 && (
+                    <div className="stats">
+                      <p>
+                        Total Goals: {goals.length} | 
+                        Completed: {goals.filter(goal => goal.completed).length} | 
+                        Average Progress: {Math.round(goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length)}%
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Goal Detail View */}
+              {goalManagementMode === 'detail' && getSelectedGoal() && (
+                <div className="goal-detail-view">
+                  <div className="selected-goal-header">
+                    <h3>🎯 {getSelectedGoal().title}</h3>
+                    <div className="selected-goal-info">
+                      <span>Deadline: {new Date(getSelectedGoal().deadline).toLocaleDateString()}</span>
+                      <span>Progress: {getSelectedGoal().progress}%</span>
+                    </div>
+                  </div>
+
+                  {/* Goals View Mode Selector */}
+                  <div className="goals-view-toggle">
+                    <button
+                      className={goalViewMode === 'checklist' ? 'toggle-btn active' : 'toggle-btn'}
+                      onClick={() => setGoalViewMode('checklist')}
+                    >
+                      📋 Checklist View
+                    </button>
+                    <button
+                      className={goalViewMode === 'timeline' ? 'toggle-btn active' : 'toggle-btn'}
+                      onClick={() => setGoalViewMode('timeline')}
+                    >
+                      🕐 Timeline View
+                    </button>
+                  </div>
+
+                  {/* Goal Content */}
+                  <div className="goal-content">
+                    {!getSelectedGoal().completed && (
+                      <div className="progress-section">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{width: `${getSelectedGoal().progress}%`}}
+                          ></div>
+                        </div>
+                        <div className="progress-text">Progress: {getSelectedGoal().progress}%</div>
+                      </div>
+                    )}
+
+                    {/* Timeline View */}
+                    {goalViewMode === 'timeline' && !getSelectedGoal().completed && (
+                      <div className="timeline-view">
+                        <div className="timeline-container">
+                          {getSelectedGoal().milestones.map((milestone) => (
+                            <div key={milestone.id} className="timeline-item">
+                              <div className={`timeline-marker ${milestone.completed ? 'completed' : ''}`}>
+                                {milestone.completed ? '✅' : '○'}
+                              </div>
+                              <div className="timeline-content">
+                                <div className="timeline-text">{milestone.text}</div>
+                                {milestone.completedAt && (
+                                  <div className="timeline-date">
+                                    Completed: {new Date(milestone.completedAt).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => toggleMilestone(getSelectedGoal().id, milestone.id)}
+                                className="timeline-toggle-btn"
+                              >
+                                {milestone.completed ? 'Undo' : 'Complete'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enhanced Checklist View */}
+                    {goalViewMode === 'checklist' && !getSelectedGoal().completed && (
+                      <div className="checklist-view">
+                        <div className="sub-tasks-section">
+                          <h4>📋 Sub-tasks ({getSelectedGoal().subTasks.filter(st => st.completed).length}/{getSelectedGoal().subTasks.length} done)</h4>
+                          
+                          {/* Add new sub-task */}
+                          <div className="add-item-section">
+                            <input
+                              type="text"
+                              value={newSubTaskText}
+                              onChange={(e) => setNewSubTaskText(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  addSubTask(getSelectedGoal().id)
+                                }
+                              }}
+                              placeholder="Add a new sub-task..."
+                              className="add-item-input"
+                            />
+                            <button 
+                              onClick={() => addSubTask(getSelectedGoal().id)}
+                              className="add-item-btn"
+                              disabled={newSubTaskText.trim() === ''}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Sub-tasks list */}
+                          {getSelectedGoal().subTasks.map(subTask => (
+                            <div key={subTask.id} className="sub-task-item">
+                              <input
+                                type="checkbox"
+                                checked={subTask.completed}
+                                onChange={() => toggleSubTask(getSelectedGoal().id, subTask.id)}
+                                className="sub-task-checkbox"
+                              />
+                              
+                              {editingSubTask === subTask.id ? (
+                                <div className="edit-item-section">
+                                  <input
+                                    type="text"
+                                    defaultValue={subTask.text}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') {
+                                        editSubTask(getSelectedGoal().id, subTask.id, e.target.value)
+                                      }
+                                    }}
+                                    onBlur={(e) => editSubTask(getSelectedGoal().id, subTask.id, e.target.value)}
+                                    className="edit-item-input"
+                                    autoFocus
+                                  />
+                                  <button 
+                                    onClick={() => setEditingSubTask(null)}
+                                    className="edit-item-btn"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className={`sub-task-text ${subTask.completed ? 'completed' : ''}`}>
+                                  {subTask.text}
+                                </span>
+                              )}
+                              
+                              {subTask.completedAt && (
+                                <span className="sub-task-date">
+                                  {new Date(subTask.completedAt).toLocaleDateString()}
+                                </span>
+                              )}
+                              
+                              <div className="item-actions">
+                                <button
+                                  onClick={() => setEditingSubTask(subTask.id)}
+                                  className="edit-btn"
+                                  title="Edit"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={() => deleteSubTask(getSelectedGoal().id, subTask.id)}
+                                  className="delete-btn"
+                                  title="Delete"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
