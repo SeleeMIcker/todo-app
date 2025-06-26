@@ -71,6 +71,9 @@ function App() {
   const [editingSubTask, setEditingSubTask] = useState(null)
   const [newSubTaskText, setNewSubTaskText] = useState('')
 
+  // Add selectedDate state
+  const [selectedDate, setSelectedDate] = useState(null)
+
   // Todo functions
   const addTodo = () => {
     if (inputValue.trim() !== '') {
@@ -435,11 +438,8 @@ function App() {
   const timeSlots = generateTimeSlots()
 
   // Timetable navigation functions
-  const navigateToWeekly = (week, day, month, year) => {
-    setSelectedWeek(week)
-    setSelectedDay(day)
-    setSelectedMonth(month)
-    setSelectedYear(year)
+  const navigateToWeekly = (dateObj) => {
+    setSelectedDate(dateObj)
     setTimetableView('weekly')
   }
 
@@ -674,13 +674,7 @@ function App() {
                   onSelectMonth={navigateToMonthly}
                   onGoToWeekly={() => {
                     const now = new Date();
-                    // Calculate week of month (1-based)
-                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-                    const firstWeekStart = 1 - firstDay;
-                    const weekNumber = Math.ceil((now.getDate() - firstWeekStart) / 7);
-                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-                    const dayName = dayNames[now.getDay()];
-                    navigateToWeekly(weekNumber, dayName, now.getMonth(), now.getFullYear());
+                    navigateToWeekly({ year: now.getFullYear(), month: now.getMonth(), date: now.getDate() });
                   }}
                 />
               ) : timetableView === 'monthly' ? (
@@ -693,10 +687,7 @@ function App() {
                 <WeeklyPlanner
                   todos={todos}
                   onViewMonth={navigateToDashboard}
-                  initialWeek={selectedWeek}
-                  initialDay={selectedDay}
-                  initialMonth={selectedMonth}
-                  initialYear={selectedYear}
+                  selectedDate={selectedDate}
                 />
               )}
             </div>

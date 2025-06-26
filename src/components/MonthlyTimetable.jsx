@@ -16,7 +16,9 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
   }
 
   const getFirstDayOfMonth = (year, month) => {
-    return new Date(year, month, 1).getDay()
+    // Return day of week with Monday as 0 and Sunday as 6
+    const day = new Date(year, month, 1).getDay()
+    return (day === 0) ? 6 : day - 1
   }
 
   // Calculate which week of the month a date belongs to
@@ -29,32 +31,36 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
 
   // Get the day name for a specific date
   const getDayName = (date) => {
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     const firstDayOfMonth = new Date(currentYear, selectedMonth, 1).getDay()
-    const dayOfWeek = (firstDayOfMonth + date - 1) % 7
+    // Adjust firstDayOfMonth to be Monday-based (0=Mon, 6=Sun)
+    const adjustedFirstDay = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1
+    const dayOfWeek = (adjustedFirstDay + date - 1) % 7
     return dayNames[dayOfWeek]
   }
 
   const getTaskCountForDate = (date) => {
     // Get tasks for the current year and selected month
     const monthTasks = taskStore.getTasksByYearAndMonth(currentYear, selectedMonth)
+    const daysInMonth = getDaysInMonth(currentYear, selectedMonth)
     
+    // Get the day of the week for the 1st of the month (0=Mon, 1=Tue, ..., 6=Sun)
+    const firstDayOfMonth = getFirstDayOfMonth(currentYear, selectedMonth) // Monday-based
+
     // Filter tasks by the specific date
     const dateTasks = monthTasks.filter(task => {
       if (!task.day || !task.week) return false
       
-      // Convert day name to day number (0 = Sunday, 1 = Monday, etc.)
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+      // Convert day name to day number (0 = Monday, 6 = Sunday)
+      const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
       const taskDayNumber = dayNames.indexOf(task.day.toLowerCase())
       
       if (taskDayNumber === -1) return false
       
-      // Calculate which week of the month this task belongs to
       const weekNumber = task.week || 1
       
       // Calculate the date for this task
       // First, find the first occurrence of this day in the month
-      const firstDayOfMonth = new Date(currentYear, selectedMonth, 1).getDay()
       const daysToAdd = (taskDayNumber - firstDayOfMonth + 7) % 7
       const firstOccurrence = 1 + daysToAdd
       
@@ -62,7 +68,7 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
       const taskDate = firstOccurrence + (weekNumber - 1) * 7
       
       // Check if this task's calculated date matches the current date
-      return taskDate === date
+      return taskDate === date && date > 0 && date <= daysInMonth
     })
     
     // Debug logging
@@ -77,44 +83,54 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
     return dateTasks.length
   }
 
-  const handleDateClick = (date) => {
-    const weekNumber = getWeekOfMonth(date)
-    const dayName = getDayName(date)
-    
-    console.log(`MonthlyTimetable - Clicked date ${date}, navigating to week ${weekNumber}, day ${dayName}`)
-    
-    // Navigate to weekly planner with the correct week and day
-    onNavigateToWeekly(weekNumber, dayName, selectedMonth, currentYear)
+  // New: count tasks for any cell by exact date
+  const getTaskCountForCell = (year, month, date) => {
+    const allTasks = taskStore.getAllTasks()
+    return allTasks.filter(task => task.year === year && task.month === month && new Date(task.year, task.month, task.dayNum || task.date || task.day || 0).getDate() === date).length
+  }
+
+  const handleDateClick = (date, month = selectedMonth, year = currentYear) => {
+    onNavigateToWeekly({ year, month, date })
   }
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentYear, selectedMonth)
-    const firstDay = getFirstDayOfMonth(currentYear, selectedMonth)
+    // Find the first day of the month (0=Mon, 6=Sun)
+    const firstDayOfMonth = getFirstDayOfMonth(currentYear, selectedMonth)
+    // Calculate the date of the first Monday to display
+    const firstDateObj = new Date(currentYear, selectedMonth, 1)
+    const firstMonday = new Date(firstDateObj)
+    firstMonday.setDate(firstDateObj.getDate() - firstDayOfMonth)
+    // Calculate the date of the last day of the month
+    const lastDateObj = new Date(currentYear, selectedMonth, daysInMonth)
+    const lastDayOfWeek = lastDateObj.getDay() === 0 ? 6 : lastDateObj.getDay() - 1
+    const lastSunday = new Date(lastDateObj)
+    lastSunday.setDate(lastDateObj.getDate() + (6 - lastDayOfWeek))
+
     const calendar = []
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDay; i++) {
-      calendar.push(<div key={`empty-${i}`} className="calendar-day empty"></div>)
-    }
-    
-    // Add cells for each day of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const taskCount = getTaskCountForDate(day)
+    let current = new Date(firstMonday)
+    while (current <= lastSunday) {
+      const cellYear = current.getFullYear()
+      const cellMonth = current.getMonth()
+      const cellDate = current.getDate()
+      // Use new function for all cells
+      const taskCount = getTaskCountForCell(cellYear, cellMonth, cellDate)
+      const isCurrentMonth = (cellMonth === selectedMonth && cellYear === currentYear)
       calendar.push(
-        <div 
-          key={day} 
-          className="calendar-day clickable"
-          onClick={() => handleDateClick(day)}
-          title={`Click to view ${months[selectedMonth]} ${day}, ${currentYear} in Weekly Planner`}
+        <div
+          key={`${cellYear}-${cellMonth}-${cellDate}`}
+          className={`calendar-day clickable${isCurrentMonth ? '' : ' other-month'}`}
+          onClick={() => handleDateClick(cellDate, cellMonth, cellYear)}
+          title={`Click to view ${months[cellMonth]} ${cellDate}, ${cellYear} in Weekly Planner`}
         >
-          <div className="day-number">{day}</div>
+          <div className="day-number">{cellDate}</div>
           {taskCount > 0 && (
             <div className="task-count">({taskCount})</div>
           )}
         </div>
       )
+      current.setDate(current.getDate() + 1)
     }
-    
     return calendar
   }
 
@@ -156,13 +172,13 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
       
       <div className="calendar-container">
         <div className="calendar-header">
-          <div className="day-label">Sun</div>
           <div className="day-label">Mon</div>
           <div className="day-label">Tue</div>
           <div className="day-label">Wed</div>
           <div className="day-label">Thu</div>
           <div className="day-label">Fri</div>
           <div className="day-label">Sat</div>
+          <div className="day-label">Sun</div>
         </div>
         <div className="calendar-grid">
           {renderCalendar()}

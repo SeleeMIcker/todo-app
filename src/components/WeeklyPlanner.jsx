@@ -4,19 +4,14 @@ import { useTaskStore } from '../contexts/TaskStore'
 const WeeklyPlanner = ({ 
   todos, 
   onViewMonth,
-  initialWeek,
-  initialDay,
-  initialMonth,
-  initialYear
+  selectedDate // { year, month, date }
 }) => {
   const taskStore = useTaskStore()
-  const [currentWeek, setCurrentWeek] = useState(initialWeek || 1)
+  const [mondayDate, setMondayDate] = useState(null)
   const [timetableMode, setTimetableMode] = useState('day')
-  const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth())
-  const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear())
   const [showMonthDropdown, setShowMonthDropdown] = useState(false)
   const [newEvent, setNewEvent] = useState({
-    day: initialDay || 'monday',
+    day: 'monday',
     startTime: '06:00',
     endTime: '07:00',
     title: '',
@@ -37,6 +32,8 @@ const WeeklyPlanner = ({
   ]
 
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+  
+  const shortDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   
   // Generate time slots based on mode
   const generateTimeSlots = () => {
@@ -97,19 +94,32 @@ const WeeklyPlanner = ({
     }))
   }, [timetableMode])
 
-  // Update newEvent day when initialDay changes (navigation from monthly view)
+  // On mount, calculate the Monday of the week for selectedDate
   useEffect(() => {
-    if (initialDay) {
-      setNewEvent(prev => ({
-        ...prev,
-        day: initialDay
-      }))
+    if (selectedDate) {
+      const { year, month, date } = selectedDate
+      const clicked = new Date(year, month, date)
+      const dayOfWeek = clicked.getDay() === 0 ? 6 : clicked.getDay() - 1 // 0=Mon, 6=Sun
+      const monday = new Date(clicked)
+      monday.setDate(clicked.getDate() - dayOfWeek)
+      setMondayDate(monday)
     }
-  }, [initialDay])
+  }, [selectedDate])
+
+  // For each day, get the correct Date object
+  const getDateForDay = (dayIndex) => {
+    if (!mondayDate) return null
+    const d = new Date(mondayDate)
+    d.setDate(mondayDate.getDate() + dayIndex)
+    return d
+  }
 
   // Add event function
   const addEvent = () => {
     if (newEvent.title.trim() !== '' && isTimeBefore(newEvent.startTime, newEvent.endTime)) {
+      // Find the day index for the selected day
+      const dayIndex = days.indexOf(newEvent.day.toLowerCase())
+      const eventDateObj = getDateForDay(dayIndex)
       const event = {
         title: newEvent.title,
         description: newEvent.description,
@@ -117,9 +127,9 @@ const WeeklyPlanner = ({
         endTime: newEvent.endTime,
         day: newEvent.day,
         color: '#4CAF50',
-        week: currentWeek, // Add week information
-        year: selectedYear, // Add year information
-        month: selectedMonth // Add month information
+        week: 1, // Assuming week 1
+        year: eventDateObj.getFullYear(),
+        month: eventDateObj.getMonth()
       }
       
       // Debug logging for night time events
@@ -171,9 +181,9 @@ const WeeklyPlanner = ({
           endTime,
           day: day,
           color: '#4CAF50',
-          week: currentWeek, // Add week information
-          year: selectedYear, // Add year information
-          month: selectedMonth // Add month information
+          week: 1, // Assuming week 1
+          year: mondayDate.getFullYear(),
+          month: mondayDate.getMonth()
         }
         taskStore.addTask(newEvent)
       }
@@ -201,14 +211,14 @@ const WeeklyPlanner = ({
   // Filter tasks by current week, year, and month
   const getTasksByDayAndWeek = (day) => {
     // First get tasks for the current year and month
-    const monthTasks = taskStore.getTasksByYearAndMonth(selectedYear, selectedMonth)
+    const monthTasks = taskStore.getTasksByYearAndMonth(mondayDate.getFullYear(), mondayDate.getMonth())
     // Then filter by day and week
     const filteredTasks = monthTasks.filter(task => 
-      task.day.toLowerCase() === day.toLowerCase() && task.week === currentWeek
+      task.day.toLowerCase() === day.toLowerCase() && task.week === 1
     )
     
     // Debug logging
-    console.log(`WeeklyPlanner - ${months[selectedMonth]} ${selectedYear}, Week ${currentWeek}, ${day}:`, {
+    console.log(`WeeklyPlanner - ${months[mondayDate.getMonth()]} ${mondayDate.getFullYear()}, Week 1, ${day}:`, {
       totalMonthTasks: monthTasks.length,
       filteredTasks: filteredTasks.length,
       tasks: filteredTasks
@@ -219,13 +229,10 @@ const WeeklyPlanner = ({
 
   // Handle month selection
   const handleMonthSelect = (monthIndex) => {
-    setSelectedMonth(monthIndex)
+    const newDate = new Date(mondayDate)
+    newDate.setMonth(monthIndex)
+    setMondayDate(newDate)
     setShowMonthDropdown(false)
-  }
-
-  // Handle year change
-  const handleYearChange = (direction) => {
-    setSelectedYear(prev => prev + direction)
   }
 
   // Get current month and date
@@ -237,38 +244,24 @@ const WeeklyPlanner = ({
     return `${month} ${date}, ${year}`
   }
 
+  if (!mondayDate) {
+    return <div>Loading weekly timetable...</div>;
+  }
+
   return (
     <div className="weekly-planner">
       <div className="weekly-planner-layout">
         {/* Sidebar for Weekly Timetables */}
         <div className="weekly-sidebar">
           <button
-            className="weekly-timetables-btn"
-            onClick={() => setCurrentWeek(1)}
+            className="view-month-button"
+            onClick={onViewMonth}
             style={{marginBottom: '20px', width: '100%', padding: '14px 0', fontSize: '1.1rem', borderRadius: '8px', background: '#007bff', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer'}}
           >
-            📅 Weekly Timetables
+            Monthly Timetable
           </button>
-          {/* Left Week Switcher */}
-          <div className="week-switcher">
-            <div className="week-list">
-              {weeks.map(week => (
-                <button
-                  key={week.id}
-                  className={`week-button ${currentWeek === week.id ? 'active' : ''}`}
-                  onClick={() => setCurrentWeek(week.id)}
-                >
-                  ◀ {week.label}
-                </button>
-              ))}
-            </div>
-            <button 
-              className="view-month-button"
-              onClick={onViewMonth}
-            >
-              📅 View Month
-            </button>
-          </div>
+          {/* Left Week Switcher (hidden) */}
+          <div className="week-switcher" style={{ display: 'none' }}></div>
         </div>
 
         {/* Right Calendar View */}
@@ -281,20 +274,20 @@ const WeeklyPlanner = ({
                 onClick={() => setShowMonthDropdown(!showMonthDropdown)}
                 aria-label="Select month"
               >
-                📅 {months[selectedMonth]} {selectedYear}
+                📅 {months[mondayDate.getMonth()]} {mondayDate.getFullYear()}
               </button>
               {showMonthDropdown && (
                 <div className="month-dropdown">
                   <div className="year-controls">
-                    <button onClick={() => handleYearChange(-1)} aria-label="Previous year">◀</button>
-                    <span>{selectedYear}</span>
-                    <button onClick={() => handleYearChange(1)} aria-label="Next year">▶</button>
+                    <button onClick={() => {}} aria-label="Previous year">◀</button>
+                    <span>{mondayDate.getFullYear()}</span>
+                    <button onClick={() => {}} aria-label="Next year">▶</button>
                   </div>
                   <div className="months-grid-dropdown">
                     {months.map((month, index) => (
                       <button
                         key={month}
-                        className={`month-option ${selectedMonth === index ? 'active' : ''}`}
+                        className={`month-option ${mondayDate.getMonth() === index ? 'active' : ''}`}
                         onClick={() => handleMonthSelect(index)}
                         aria-label={`Select ${month}`}
                       >
@@ -375,9 +368,10 @@ const WeeklyPlanner = ({
           <div className="weekly-timetable-container">
             <div className="weekly-timetable-header">
               <div className="time-column-header">Time</div>
-              {days.map(day => (
-                <div key={day} className="day-header">
-                  {day.charAt(0).toUpperCase() + day.slice(1)}
+              {days.map((day, dayIndex) => (
+                <div key={day} className="day-header" style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                  <span>{shortDays[dayIndex]}</span>
+                  <span className="day-date">{getDateForDay(dayIndex)?.getDate()}</span>
                 </div>
               ))}
             </div>
@@ -385,7 +379,7 @@ const WeeklyPlanner = ({
               {timeSlots.map((timeSlot, timeIndex) => (
                 <React.Fragment key={timeSlot}>
                   <div className="time-slot-header">{timeSlot}</div>
-                  {days.map(day => (
+                  {days.map((day, dayIndex) => (
                     <div
                       key={`${day}-${timeSlot}`}
                       className="timetable-cell"
