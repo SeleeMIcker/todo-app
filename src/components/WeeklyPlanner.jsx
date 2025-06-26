@@ -240,25 +240,35 @@ const WeeklyPlanner = ({
   return (
     <div className="weekly-planner">
       <div className="weekly-planner-layout">
-        {/* Left Week Switcher */}
-        <div className="week-switcher">
-          <div className="week-list">
-            {weeks.map(week => (
-              <button
-                key={week.id}
-                className={`week-button ${currentWeek === week.id ? 'active' : ''}`}
-                onClick={() => setCurrentWeek(week.id)}
-              >
-                ◀ {week.label}
-              </button>
-            ))}
-          </div>
-          <button 
-            className="view-month-button"
-            onClick={onViewMonth}
+        {/* Sidebar for Weekly Timetables */}
+        <div className="weekly-sidebar">
+          <button
+            className="weekly-timetables-btn"
+            onClick={() => setCurrentWeek(1)}
+            style={{marginBottom: '20px', width: '100%', padding: '14px 0', fontSize: '1.1rem', borderRadius: '8px', background: '#007bff', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer'}}
           >
-            📅 View Month
+            📅 Weekly Timetables
           </button>
+          {/* Left Week Switcher */}
+          <div className="week-switcher">
+            <div className="week-list">
+              {weeks.map(week => (
+                <button
+                  key={week.id}
+                  className={`week-button ${currentWeek === week.id ? 'active' : ''}`}
+                  onClick={() => setCurrentWeek(week.id)}
+                >
+                  ◀ {week.label}
+                </button>
+              ))}
+            </div>
+            <button 
+              className="view-month-button"
+              onClick={onViewMonth}
+            >
+              📅 View Month
+            </button>
+          </div>
         </div>
 
         {/* Right Calendar View */}

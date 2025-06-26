@@ -672,6 +672,16 @@ function App() {
               {timetableView === 'dashboard' ? (
                 <MonthlyDashboard
                   onSelectMonth={navigateToMonthly}
+                  onGoToWeekly={() => {
+                    const now = new Date();
+                    // Calculate week of month (1-based)
+                    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+                    const firstWeekStart = 1 - firstDay;
+                    const weekNumber = Math.ceil((now.getDate() - firstWeekStart) / 7);
+                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                    const dayName = dayNames[now.getDay()];
+                    navigateToWeekly(weekNumber, dayName, now.getMonth(), now.getFullYear());
+                  }}
                 />
               ) : timetableView === 'monthly' ? (
                 <MonthlyTimetable

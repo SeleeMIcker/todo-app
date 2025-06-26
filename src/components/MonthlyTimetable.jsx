@@ -118,10 +118,6 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
     return calendar
   }
 
-  const handleYearChange = (direction) => {
-    setCurrentYear(prev => prev + direction)
-  }
-
   // Get tasks for the current month
   const currentMonthTasks = taskStore.getTasksByYearAndMonth(currentYear, selectedMonth)
 
@@ -142,9 +138,19 @@ const MonthlyTimetable = ({ selectedMonth, onBackToDashboard, onNavigateToWeekly
           ← Back to Months
         </button>
         <div className="month-year-controls">
-          <button onClick={() => handleYearChange(-1)} className="year-nav">◀</button>
+          <button onClick={() => setCurrentYear(currentYear - 1)} className="year-nav">◀</button>
+          <select
+            value={currentYear}
+            onChange={e => setCurrentYear(Number(e.target.value))}
+            className="year-select"
+            style={{margin: '0 10px', padding: '6px 12px', borderRadius: '6px', fontSize: '1rem'}}
+          >
+            {Array.from({length: 11}, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          <button onClick={() => setCurrentYear(currentYear + 1)} className="year-nav">▶</button>
           <h2>📅 {months[selectedMonth]} {currentYear}</h2>
-          <button onClick={() => handleYearChange(1)} className="year-nav">▶</button>
         </div>
       </div>
       
