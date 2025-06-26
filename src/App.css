@@ -1881,34 +1881,62 @@ h1 {
 
 .month-selector {
   position: relative;
+  width: 220px;
+  max-width: 100%;
 }
 
 .month-selector-button {
-  padding: 10px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  font-size: 1.1rem;
   background: #f8f9fa;
   border: 2px solid #e9ecef;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.month-selector-button:hover {
+.month-selector-button:hover, .month-selector-button:focus {
   border-color: #007bff;
+  background: #e3f2fd;
 }
 
 .month-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
-  background: white;
+  width: 100%;
+  z-index: 1000;
+  background: #fff;
   border: 2px solid #e9ecef;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  z-index: 1000;
   padding: 15px;
   margin-top: 5px;
+}
+
+.months-grid-dropdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.month-option {
+  padding: 10px 0;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.month-option:hover, .month-option.active {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
 }
 
 .year-controls {
@@ -1928,51 +1956,59 @@ h1 {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
+  margin: 0 4px;
+  transition: background 0.2s;
 }
 
-.year-controls span {
-  font-weight: 600;
-  color: #333;
+.year-controls button:hover, .year-controls button:focus {
+  background: #0056b3;
 }
 
-.months-grid-dropdown {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.week-button, .view-month-button, .add-button, .toggle-btn {
+  font-size: 1.05rem;
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin: 4px 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
-.month-option {
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.month-option:hover {
-  background: #e9ecef;
-  border-color: #007bff;
-}
-
-.month-option.active {
+.week-button.active, .toggle-btn.active, .add-button {
   background: #007bff;
-  color: white;
+  color: #fff;
   border-color: #007bff;
 }
 
-.timetable-input {
-  display: flex;
-  gap: 10px;
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
-  flex-wrap: wrap;
-  align-items: center;
+.week-button:hover, .toggle-btn:hover, .add-button:hover, .view-month-button:hover {
+  background: #0056b3;
+  color: #fff;
 }
 
-.weekly-timetable-container {
-  overflow-x: auto;
+.month-card, .calendar-day, .goal-card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border-radius: 12px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.month-card:hover, .calendar-day.clickable:hover, .goal-card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .month-selector {
+    width: 100%;
+  }
+  .month-dropdown {
+    min-width: 180px;
+    padding: 10px;
+  }
+  .months-grid-dropdown {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .weekly-header, .monthly-header, .dashboard-header {
+    padding: 12px 8px;
+  }
 }
 
 .weekly-timetable-header {
@@ -1980,21 +2016,6 @@ h1 {
   grid-template-columns: 80px repeat(7, 1fr);
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
-}
-
-.time-column-header {
-  padding: 15px 10px;
-  text-align: center;
-  font-weight: 600;
-  color: #495057;
-}
-
-.day-header {
-  padding: 15px 10px;
-  text-align: center;
-  font-weight: 600;
-  color: #495057;
-  border-left: 1px solid #e9ecef;
 }
 
 .weekly-timetable-grid {
@@ -2012,6 +2033,7 @@ h1 {
   color: #495057;
   font-weight: 500;
   border-bottom: 1px solid #e9ecef;
+  border-right: 1px solid #e9ecef;
 }
 
 .timetable-cell {
@@ -2020,53 +2042,19 @@ h1 {
   padding: 5px;
   position: relative;
   border-bottom: 1px solid #e9ecef;
-  border-left: 1px solid #e9ecef;
+  border-right: 1px solid #e9ecef;
 }
 
-.timetable-cell:nth-child(7n+1) {
-  border-left: none;
+.timetable-cell:last-child {
+  border-right: none;
 }
 
-.timetable-cell:hover {
-  background: #f8f9fa;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .months-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+@media (max-width: 900px) {
+  .weekly-timetable-header, .weekly-timetable-grid {
+    grid-template-columns: 60px repeat(7, 1fr);
   }
-  
-  .monthly-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .month-year-controls {
-    justify-content: center;
-  }
-  
-  .weekly-planner-layout {
-    flex-direction: column;
-  }
-  
-  .week-switcher {
-    width: 100%;
-    order: 2;
-  }
-  
-  .weekly-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .timetable-input {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .timetable-input > * {
-    width: 100%;
+  .time-slot-header {
+    font-size: 0.8rem;
+    padding: 6px;
   }
 }

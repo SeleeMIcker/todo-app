@@ -266,25 +266,27 @@ const WeeklyPlanner = ({
           {/* Month Selector and Mode Toggle */}
           <div className="weekly-header">
             <div className="month-selector">
-              <button 
+              <button
                 className="month-selector-button"
                 onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+                aria-label="Select month"
               >
                 📅 {months[selectedMonth]} {selectedYear}
               </button>
               {showMonthDropdown && (
                 <div className="month-dropdown">
                   <div className="year-controls">
-                    <button onClick={() => handleYearChange(-1)}>◀</button>
+                    <button onClick={() => handleYearChange(-1)} aria-label="Previous year">◀</button>
                     <span>{selectedYear}</span>
-                    <button onClick={() => handleYearChange(1)}>▶</button>
+                    <button onClick={() => handleYearChange(1)} aria-label="Next year">▶</button>
                   </div>
-                  <div className="months-grid">
+                  <div className="months-grid-dropdown">
                     {months.map((month, index) => (
                       <button
                         key={month}
                         className={`month-option ${selectedMonth === index ? 'active' : ''}`}
                         onClick={() => handleMonthSelect(index)}
+                        aria-label={`Select ${month}`}
                       >
                         {month}
                       </button>
@@ -362,7 +364,7 @@ const WeeklyPlanner = ({
           {/* Calendar Grid */}
           <div className="weekly-timetable-container">
             <div className="weekly-timetable-header">
-              <div className="time-column-header"></div>
+              <div className="time-column-header">Time</div>
               {days.map(day => (
                 <div key={day} className="day-header">
                   {day.charAt(0).toUpperCase() + day.slice(1)}
