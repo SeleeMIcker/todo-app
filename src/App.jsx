@@ -338,10 +338,14 @@ function App() {
     }))
   }
 
-  // Goal management functions
-  const focusOnGoal = (goalId) => {
-    setSelectedGoalId(goalId)
-    setGoalManagementMode('detail')
+  // Remove a todo from all matrix quadrants
+  const removeTodoFromMatrix = (todoId) => {
+    setMatrixTasks(prev => ({
+      doFirst: prev.doFirst.filter(t => t.id !== todoId),
+      schedule: prev.schedule.filter(t => t.id !== todoId),
+      delegate: prev.delegate.filter(t => t.id !== todoId),
+      eliminate: prev.eliminate.filter(t => t.id !== todoId)
+    }))
   }
 
   const backToGoalList = () => {
@@ -516,47 +520,57 @@ function App() {
                 {todos.length === 0 ? (
                   <p className="empty-message">No todos yet. Add one above!</p>
                 ) : (
-                  todos.map(todo => (
-                    <div
-                      key={todo.id}
-                      className={`todo-item ${todo.completed ? 'completed' : ''} ${todo.sentToMatrix ? 'sent-to-matrix' : ''}`}
-                      draggable={!todo.completed}
-                      onDragStart={(e) => onTodoDragStart(e, todo)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={todo.completed}
-                        onChange={() => toggleTodo(todo.id)}
-                        className="todo-checkbox"
-                      />
-                      <div className="todo-content">
-                        <span className="todo-text">{todo.text}</span>
-                        <span className="todo-duration">{todo.duration} hour{todo.duration !== 1 ? 's' : ''}</span>
-                      </div>
-                      <span className="todo-date">
-                        {new Date(todo.createdAt).toLocaleDateString()}
-                      </span>
-                      <button 
-                        onClick={() => deleteTodo(todo.id)}
-                        className="delete-button"
+                  todos.map(todo => {
+                    const inMatrix = matrixTasks.doFirst.some(t => t.id === todo.id) ||
+                                    matrixTasks.schedule.some(t => t.id === todo.id) ||
+                                    matrixTasks.delegate.some(t => t.id === todo.id) ||
+                                    matrixTasks.eliminate.some(t => t.id === todo.id)
+                    return (
+                      <div
+                        key={todo.id}
+                        className={`todo-item ${todo.completed ? 'completed' : ''}`}
+                        draggable={!todo.completed}
+                        onDragStart={(e) => onTodoDragStart(e, todo)}
                       >
-                        Delete
-                      </button>
-                      {!todo.sentToMatrix ? (
-                        <button
-                          className="add-button send-to-matrix"
-                          onClick={() => sendTodoToMatrix(todo)}
-                          title="Send to Eisenhower Matrix"
-                        >
-                          ➡️ Matrix
-                        </button>
-                      ) : (
-                        <span className="matrix-indicator" title="Already in Matrix">
-                          ✅ In Matrix
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={() => toggleTodo(todo.id)}
+                          className="todo-checkbox"
+                        />
+                        <div className="todo-content">
+                          <span className="todo-text">{todo.text}</span>
+                          <span className="todo-duration">{todo.duration} hour{todo.duration !== 1 ? 's' : ''}</span>
+                        </div>
+                        <span className="todo-date">
+                          {new Date(todo.createdAt).toLocaleDateString()}
                         </span>
-                      )}
-                    </div>
-                  ))
+                        <button 
+                          onClick={() => deleteTodo(todo.id)}
+                          className="delete-button"
+                        >
+                          Delete
+                        </button>
+                        {inMatrix ? (
+                          <button
+                            className="add-button send-to-matrix in-matrix"
+                            onClick={() => removeTodoFromMatrix(todo.id)}
+                            title="Remove from Eisenhower Matrix"
+                          >
+                            ✅ In Matrix
+                          </button>
+                        ) : (
+                          <button
+                            className="add-button send-to-matrix"
+                            onClick={() => sendTodoToMatrix(todo)}
+                            title="Send to Eisenhower Matrix"
+                          >
+                            ➡️ Matrix
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })
                 )}
               </div>
 
@@ -568,27 +582,6 @@ function App() {
 
               {/* Eisenhower Matrix below To-Do List */}
               <div className="eisenhower-matrix" style={{marginTop: 40}}>
-                <div className="matrix-input-section">
-                  <input
-                    type="text"
-                    value={matrixInput}
-                    onChange={(e) => setMatrixInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && matrixInput.trim() !== '') {
-                        addMatrixTask()
-                      }
-                    }}
-                    placeholder="Add a task to the matrix..."
-                    className="matrix-input"
-                  />
-                  <button 
-                    onClick={addMatrixTask} 
-                    className="add-button"
-                    disabled={matrixInput.trim() === ''}
-                  >
-                    Add to Matrix
-                  </button>
-                </div>
                 <div className="matrix-row">
                   <div
                     className="matrix-quadrant"
