@@ -81,10 +81,13 @@ export const TaskStoreProvider = ({ children }) => {
 
   // Store functions
   const addTask = (task) => {
+    const now = new Date()
     const newTask = {
       id: Date.now(),
       ...task,
-      createdAt: new Date().toISOString()
+      createdAt: now.toISOString(),
+      year: task.year !== undefined ? task.year : now.getFullYear(),
+      month: task.month !== undefined ? task.month : now.getMonth() // 0-11 for January-December
     }
     dispatch({ type: TASK_ACTIONS.ADD_TASK, payload: newTask })
   }
@@ -110,6 +113,13 @@ export const TaskStoreProvider = ({ children }) => {
     )
   }
 
+  // New function to get tasks by year and month
+  const getTasksByYearAndMonth = (year, month) => {
+    return state.tasks.filter(task => 
+      task.year === year && task.month === month
+    )
+  }
+
   const getAllTasks = () => {
     return state.tasks
   }
@@ -125,6 +135,7 @@ export const TaskStoreProvider = ({ children }) => {
     deleteTask,
     getTasksForShift,
     getTasksByDay,
+    getTasksByYearAndMonth,
     getAllTasks,
     getTaskById
   }

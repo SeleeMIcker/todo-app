@@ -1575,5 +1575,498 @@ h1 {
 }
 
 .task-pool-item .delete-button.small:hover {
-  background: rgba(255,0,0,0.18);
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Monthly Dashboard Styles */
+.monthly-dashboard {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.dashboard-header h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.dashboard-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.months-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.month-card {
+  background: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.month-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border-color: #007bff;
+}
+
+.month-card.current-month {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #f8fff9 0%, #e8f5e8 100%);
+}
+
+.month-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.month-year {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.month-task-count {
+  font-size: 0.9rem;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.current-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Monthly Timetable Styles */
+.monthly-timetable {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.monthly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.back-button {
+  padding: 10px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background: #5a6268;
+}
+
+.month-year-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.month-year-controls h2 {
+  font-size: 1.8rem;
+  margin: 0;
+  color: #333;
+}
+
+.year-nav {
+  padding: 8px 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.year-nav:hover {
+  background: #0056b3;
+}
+
+.calendar-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.day-label {
+  padding: 15px 10px;
+  text-align: center;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #e9ecef;
+}
+
+.calendar-day {
+  background: white;
+  min-height: 80px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.calendar-day.empty {
+  background: #f8f9fa;
+}
+
+.calendar-day.clickable {
+  cursor: pointer;
+}
+
+.calendar-day.clickable:hover {
+  background: #e3f2fd;
+}
+
+.day-number {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.task-count {
+  font-size: 0.8rem;
+  color: #007bff;
+  font-weight: 500;
+  background: #e3f2fd;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+/* Weekly Planner Styles */
+.weekly-planner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.weekly-planner-layout {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+}
+
+.week-switcher {
+  width: 200px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.week-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.week-button {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: left;
+  transition: all 0.2s;
+  color: #495057;
+}
+
+.week-button:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
+
+.week-button.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.view-month-button {
+  padding: 12px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.view-month-button:hover {
+  background: #218838;
+}
+
+.weekly-calendar {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.weekly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.month-selector {
+  position: relative;
+}
+
+.month-selector-button {
+  padding: 10px 20px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.month-selector-button:hover {
+  border-color: #007bff;
+}
+
+.month-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 1000;
+  padding: 15px;
+  margin-top: 5px;
+}
+
+.year-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.year-controls button {
+  padding: 5px 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.year-controls span {
+  font-weight: 600;
+  color: #333;
+}
+
+.months-grid-dropdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.month-option {
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.month-option:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
+
+.month-option.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.timetable-input {
+  display: flex;
+  gap: 10px;
+  padding: 20px;
+  border-bottom: 1px solid #e9ecef;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.weekly-timetable-container {
+  overflow-x: auto;
+}
+
+.weekly-timetable-header {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.time-column-header {
+  padding: 15px 10px;
+  text-align: center;
+  font-weight: 600;
+  color: #495057;
+}
+
+.day-header {
+  padding: 15px 10px;
+  text-align: center;
+  font-weight: 600;
+  color: #495057;
+  border-left: 1px solid #e9ecef;
+}
+
+.weekly-timetable-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: 1px;
+  background: #e9ecef;
+}
+
+.time-slot-header {
+  background: #f8f9fa;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 500;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.timetable-cell {
+  background: white;
+  min-height: 60px;
+  padding: 5px;
+  position: relative;
+  border-bottom: 1px solid #e9ecef;
+  border-left: 1px solid #e9ecef;
+}
+
+.timetable-cell:nth-child(7n+1) {
+  border-left: none;
+}
+
+.timetable-cell:hover {
+  background: #f8f9fa;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .months-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  .monthly-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .month-year-controls {
+    justify-content: center;
+  }
+  
+  .weekly-planner-layout {
+    flex-direction: column;
+  }
+  
+  .week-switcher {
+    width: 100%;
+    order: 2;
+  }
+  
+  .weekly-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .timetable-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .timetable-input > * {
+    width: 100%;
+  }
 }

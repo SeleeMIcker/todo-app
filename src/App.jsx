@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import './App.css'
 import FocusPage from './components/FocusPage'
 import PomodoroTimer from './components/PomodoroTimer'
+import MonthlyDashboard from './components/MonthlyDashboard'
+import MonthlyTimetable from './components/MonthlyTimetable'
+import WeeklyPlanner from './components/WeeklyPlanner'
 import { useTaskStore } from './contexts/TaskStore.jsx'
 
 function App() {
@@ -29,6 +32,13 @@ function App() {
     title: '',
     description: ''
   })
+
+  // Timetable navigation state
+  const [timetableView, setTimetableView] = useState('dashboard') // 'dashboard', 'monthly', or 'weekly'
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedWeek, setSelectedWeek] = useState(1)
+  const [selectedDay, setSelectedDay] = useState('monday')
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
 
   // Eisenhower Matrix state
   const eisenhowerColors = {
@@ -420,6 +430,24 @@ function App() {
   }
   const timeSlots = generateTimeSlots()
 
+  // Timetable navigation functions
+  const navigateToWeekly = (week, day, month, year) => {
+    setSelectedWeek(week)
+    setSelectedDay(day)
+    setSelectedMonth(month)
+    setSelectedYear(year)
+    setTimetableView('weekly')
+  }
+
+  const navigateToMonthly = (month) => {
+    setSelectedMonth(month)
+    setTimetableView('monthly')
+  }
+
+  const navigateToDashboard = () => {
+    setTimetableView('dashboard')
+  }
+
   return (
     <div className="app">
       <div className="layout">
@@ -648,149 +676,26 @@ function App() {
           {/* Timetable Tab */}
           {activeTab === 'timetable' && (
             <div className="tab-content">
-              <div className="timetable-mode-toggle">
-                <button
-                  className={timetableMode === 'day' ? 'toggle-btn active' : 'toggle-btn'}
-                  onClick={() => setTimetableMode('day')}
-                >
-                  Day (6:00-22:00)
-                </button>
-                <button
-                  className={timetableMode === 'night' ? 'toggle-btn active' : 'toggle-btn'}
-                  onClick={() => setTimetableMode('night')}
-                >
-                  Night (23:00-5:00)
-                </button>
-              </div>
-              <div className="timetable-input">
-                <select
-                  value={newEvent.day}
-                  onChange={(e) => setNewEvent({...newEvent, day: e.target.value})}
-                  className="day-select"
-                >
-                  {days.map(day => (
-                    <option key={day} value={day}>
-                      {day.charAt(0).toUpperCase() + day.slice(1)}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newEvent.startTime}
-                  onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })}
-                  className="start-time-select"
-                >
-                  {timeSlots.map(slot => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
-                </select>
-                <select
-                  value={newEvent.endTime}
-                  onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })}
-                  className="end-time-select"
-                >
-                  {timeSlots.map(slot => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
-                  placeholder="Event title"
-                  className="event-title-input"
+              {timetableView === 'dashboard' ? (
+                <MonthlyDashboard
+                  onSelectMonth={navigateToMonthly}
                 />
-                <input
-                  type="text"
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
-                  placeholder="Description (optional)"
-                  className="event-desc-input"
+              ) : timetableView === 'monthly' ? (
+                <MonthlyTimetable
+                  selectedMonth={selectedMonth}
+                  onBackToDashboard={navigateToDashboard}
+                  onNavigateToWeekly={navigateToWeekly}
                 />
-                <button onClick={addEvent} className="add-button">
-                  Add Event
-                </button>
-              </div>
-
-              <div className="timetable-container">
-                <div className="timetable-header">
-                  <div className="time-column-header"></div>
-                  {days.map(day => (
-                    <div key={day} className="day-header">
-                      {day.charAt(0).toUpperCase() + day.slice(1)}
-                    </div>
-                  ))}
-                </div>
-                <div className="timetable-grid">
-                  {timeSlots.map((timeSlot, timeIndex) => (
-                    <React.Fragment key={timeSlot}>
-                      <div className="time-slot-header">{timeSlot}</div>
-                      {days.map(day => (
-                        <div
-                          key={`${day}-${timeSlot}`}
-                          className="timetable-cell"
-                          onDrop={(e) => handleDrop(e, day, timeSlot)}
-                          onDragOver={(e) => e.preventDefault()}
-                        >
-                          {getTasksByDay(day)
-                            .filter(event => {
-                              const eventStartIndex = timeSlots.indexOf(event.startTime)
-                              const eventEndIndex = timeSlots.indexOf(event.endTime)
-                              return timeIndex >= eventStartIndex && timeIndex < eventEndIndex
-                            })
-                            .map(event => {
-                              const eventStartIndex = timeSlots.indexOf(event.startTime)
-                              if (timeIndex !== eventStartIndex) return null
-                              // Calculate height based on slot difference
-                              const slotDiff = timeSlots.indexOf(event.endTime) - eventStartIndex
-                              return (
-                                <div
-                                  key={event.id}
-                                  className="timetable-event"
-                                  style={{
-                                    height: `${slotDiff * 60}px`,
-                                    backgroundColor: event.color || '#4CAF50',
-                                    position: 'absolute',
-                                    top: '2px',
-                                    left: '2px',
-                                    right: '2px',
-                                    zIndex: 10
-                                  }}
-                                  draggable
-                                  onDragStart={(e) => handleDragStart(e, event)}
-                                >
-                                  <div className="event-title">{event.title}</div>
-                                  <div className="event-duration">{event.startTime} - {event.endTime}</div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteTask(event.id)
-                                    }}
-                                    className="delete-button small"
-                                    style={{
-                                      position: 'absolute',
-                                      top: '2px',
-                                      right: '2px',
-                                      background: 'rgba(255,255,255,0.2)',
-                                      border: 'none',
-                                      borderRadius: '50%',
-                                      width: '16px',
-                                      height: '16px',
-                                      fontSize: '10px',
-                                      cursor: 'pointer',
-                                      color: 'white'
-                                    }}
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              )
-                            })}
-                        </div>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
+              ) : (
+                <WeeklyPlanner
+                  todos={todos}
+                  onViewMonth={navigateToDashboard}
+                  initialWeek={selectedWeek}
+                  initialDay={selectedDay}
+                  initialMonth={selectedMonth}
+                  initialYear={selectedYear}
+                />
+              )}
             </div>
           )}
 
