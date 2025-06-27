@@ -1,3 +1,7 @@
+/* Remove Macaroon Color Palette and restore original matrix styles */
+:root {
+}
+
 body, .app {
   background: #fff !important;
   color: #23283a !important;
@@ -171,88 +175,102 @@ h1 {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  background: #fff;
+  background: var(--macaroon-cream);
+  border-radius: 16px;
+  box-shadow: var(--macaroon-shadow);
+  padding: 18px 20px;
 }
 
 .todo-input {
   flex: 1;
   padding: 12px 16px;
-  border: 2px solid #fff;
+  border: 2px solid var(--macaroon-border);
   border-radius: 8px;
   font-size: 16px;
   outline: none;
   transition: border-color 0.2s;
-  color: #23283a;
+  color: var(--macaroon-text);
+  background: var(--macaroon-lemon);
 }
 
 .todo-input:focus {
-  border-color: #007bff;
+  border-color: var(--macaroon-accent2);
 }
 
 .add-button {
   padding: 12px 24px;
-  background-color: #007bff;
-  color: #fff;
+  background-color: var(--macaroon-accent);
+  color: var(--macaroon-text);
   border: none;
   border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
+  font-weight: 600;
+  box-shadow: var(--macaroon-shadow);
 }
 
 .add-button:hover {
-  background-color: #0056b3;
+  background-color: var(--macaroon-accent2);
+  color: var(--macaroon-text);
 }
 
 .todos-list {
   margin-bottom: 20px;
-  background: #fff;
-  color: #23283a;
+  background: var(--macaroon-cream);
+  color: var(--macaroon-text);
+  border-radius: 16px;
+  box-shadow: var(--macaroon-shadow);
+  padding: 18px 20px;
 }
 
 .todo-item {
   display: flex;
   align-items: center;
   padding: 16px;
-  background-color: #fff;
-  border-radius: 8px;
+  background-color: var(--macaroon-pistachio);
+  border-radius: 12px;
   margin-bottom: 10px;
   transition: all 0.2s;
-  color: #23283a;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  color: var(--macaroon-text);
+  box-shadow: 0 1px 4px rgba(183, 228, 199, 0.10);
+  border: 1.5px solid var(--macaroon-border);
+  gap: 12px;
 }
 
 .todo-item:hover {
-  background-color: #e9ecef;
+  background-color: var(--macaroon-lavender);
 }
 
 .todo-item.completed {
-  background-color: #e9fbe9;
-  opacity: 0.8;
-  color: #2a3a2a;
+  background-color: var(--macaroon-rose);
+  opacity: 0.7;
+  color: #888;
 }
 
 .todo-checkbox {
   margin-right: 12px;
   transform: scale(1.2);
   cursor: pointer;
+  accent-color: var(--macaroon-accent2);
 }
 
 .todo-text {
   flex: 1;
   font-size: 16px;
-  color: #333;
+  color: var(--macaroon-text);
+  font-weight: 500;
 }
 
 .todo-item.completed .todo-text {
   text-decoration: line-through;
-  color: #6c757d;
+  color: #bfa6a6;
 }
 
 .todo-date {
   margin-right: 12px;
   font-size: 14px;
-  color: #6c757d;
+  color: #bfa6a6;
 }
 
 .todo-item .add-button.send-to-matrix,
@@ -269,53 +287,55 @@ h1 {
   box-sizing: border-box;
 }
 .todo-item .add-button.send-to-matrix.in-matrix {
-  background: #28a745;
-  color: #fff;
-  border: none;
+  background: var(--macaroon-pistachio);
+  color: var(--macaroon-text);
+  border: 1.5px solid var(--macaroon-accent2);
   font-weight: 600;
   opacity: 0.95;
 }
 .todo-item .add-button.send-to-matrix:not(.in-matrix) {
-  background: #007bff;
-  color: #fff;
+  background: var(--macaroon-accent);
+  color: var(--macaroon-text);
   border: none;
   font-weight: 500;
 }
 .todo-item .add-button.send-to-matrix:hover:not(.in-matrix) {
-  background: #0056b3;
+  background: var(--macaroon-accent2);
+  color: var(--macaroon-text);
 }
 .todo-item .add-button.send-to-matrix.in-matrix:hover {
-  background: #218838;
+  background: var(--macaroon-accent2);
 }
 .todo-item .delete-button {
-  background: #dc3545;
-  color: #fff;
+  background: var(--macaroon-rose);
+  color: var(--macaroon-text);
   border: none;
-  font-weight: 500;
+  font-weight: 600;
   transition: background 0.2s;
 }
 .todo-item .delete-button:hover {
-  background: #b71c1c;
+  background: var(--macaroon-accent);
+  color: var(--macaroon-text);
 }
 
 .empty-message {
   text-align: center;
-  color: #6c757d;
+  color: var(--macaroon-text);
   font-style: italic;
   padding: 40px;
-  background-color: #fff;
-  border-radius: 8px;
-  color: #23283a;
+  background-color: var(--macaroon-lemon);
+  border-radius: 12px;
+  box-shadow: var(--macaroon-shadow);
 }
 
 .stats {
   text-align: center;
   padding: 16px;
-  background-color: #fff;
-  border-radius: 8px;
-  color: #495057;
+  background-color: var(--macaroon-brown);
+  border-radius: 12px;
+  color: var(--macaroon-text);
   font-weight: 500;
-  color: #23283a;
+  box-shadow: var(--macaroon-shadow);
 }
 
 /* Timetable Styles */
@@ -867,6 +887,13 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.matrix-task .delete-button.small {
+  background: rgba(255,0,0,0.08);
+  color: #c00;
+}
+.matrix-task .delete-button.small:hover {
+  background-color: #dc3545;
 }
 @media (max-width: 900px) {
   .eisenhower-matrix {

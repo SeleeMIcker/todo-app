@@ -4,7 +4,8 @@ import { useTaskStore } from '../contexts/TaskStore'
 const WeeklyPlanner = ({ 
   todos, 
   onViewMonth,
-  selectedDate // { year, month, date }
+  selectedDate,
+  goals = [] // pass goals as prop if needed
 }) => {
   const taskStore = useTaskStore()
   const [mondayDate, setMondayDate] = useState(null)
@@ -159,31 +160,57 @@ const WeeklyPlanner = ({
     }
   }
 
+  // Drag start for sidebar tasks
+  const handleSidebarDragStart = (e, item) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      type: item.isSubtask ? 'subtask' : 'todo',
+      id: item.id,
+      goalId: item.goalId || null
+    }))
+  }
+
+  // Update timetable cell drop handler to accept sidebar tasks
   const handleDrop = (e, day, timeSlot) => {
     e.preventDefault()
     const eventData = JSON.parse(e.dataTransfer.getData('text/plain'))
-    
     const getEndTime = (start, duration) => {
       const idx = timeSlots.indexOf(start)
       const endIdx = idx + Math.max(1, Math.round((duration || 1)))
       return timeSlots[endIdx] || timeSlots[timeSlots.length - 1]
     }
-
     if (eventData.type === 'todo') {
       const todo = todos.find(t => t.id === eventData.id)
       if (todo) {
-        const duration = todo.duration || 1
-        const endTime = getEndTime(timeSlot, duration)
+        const dayIndex = days.indexOf(day.toLowerCase())
+        const eventDateObj = getDateForDay(dayIndex)
         const newEvent = {
           title: todo.text,
           description: todo.description,
           startTime: timeSlot,
-          endTime,
+          endTime: getEndTime(timeSlot, todo.duration),
           day: day,
           color: '#4CAF50',
-          week: 1, // Assuming week 1
-          year: mondayDate.getFullYear(),
-          month: mondayDate.getMonth()
+          week: 1,
+          year: eventDateObj.getFullYear(),
+          month: eventDateObj.getMonth()
+        }
+        taskStore.addTask(newEvent)
+      }
+    } else if (eventData.type === 'subtask') {
+      const subtask = allSubtasks.find(st => st.id === eventData.id)
+      if (subtask) {
+        const dayIndex = days.indexOf(day.toLowerCase())
+        const eventDateObj = getDateForDay(dayIndex)
+        const newEvent = {
+          title: subtask.text,
+          description: '',
+          startTime: timeSlot,
+          endTime: getEndTime(timeSlot, 1),
+          day: day,
+          color: '#6c63ff',
+          week: 1,
+          year: eventDateObj.getFullYear(),
+          month: eventDateObj.getMonth()
         }
         taskStore.addTask(newEvent)
       }
@@ -244,6 +271,20 @@ const WeeklyPlanner = ({
     return `${month} ${date}, ${year}`
   }
 
+  // Gather all subtasks from all goals
+  const allSubtasks = goals.flatMap(goal =>
+    (goal.subTasks || []).map(subtask => ({
+      ...subtask,
+      goalId: goal.id,
+      isSubtask: true,
+    }))
+  )
+  // Mark scheduled/completed status (placeholder logic for now)
+  const getStatus = (item) => {
+    // TODO: Replace with real logic
+    return { scheduled: false, completed: !!item.completed }
+  }
+
   if (!mondayDate) {
     return <div>Loading weekly timetable...</div>;
   }
@@ -260,6 +301,35 @@ const WeeklyPlanner = ({
           >
             Monthly Timetable
           </button>
+          <div className="global-tasks-section" style={{marginBottom: 24}}>
+            <div style={{fontWeight: 700, marginBottom: 8}}>Global Tasks</div>
+            <div className="global-tasks-list">
+              {todos.map(todo => {
+                const status = getStatus(todo)
+                return (
+                  <div key={todo.id} className={`global-task-item${status.scheduled ? ' scheduled' : ''}${status.completed ? ' completed' : ''}`} style={{display: 'flex', alignItems: 'center', marginBottom: 6, background: status.completed ? '#e0ffe0' : status.scheduled ? '#e6f0ff' : '#fff', borderRadius: 6, padding: '6px 8px'}}>
+                    <span style={{marginRight: 8}}>{status.completed ? '✓' : '•'}</span>
+                    <span style={{flex: 1}}>{todo.text}</span>
+                    <span style={{marginRight: 8, color: '#888', fontSize: 12}}>Todo</span>
+                    <button style={{marginRight: 4, cursor: 'grab'}} draggable onDragStart={e => handleSidebarDragStart(e, todo)}>⠿</button>
+                    <button style={{color: '#c00', background: 'none', border: 'none', cursor: 'pointer'}}>🗑️</button>
+                  </div>
+                )
+              })}
+              {allSubtasks.map(subtask => {
+                const status = getStatus(subtask)
+                return (
+                  <div key={subtask.id} className={`global-task-item${status.scheduled ? ' scheduled' : ''}${status.completed ? ' completed' : ''}`} style={{display: 'flex', alignItems: 'center', marginBottom: 6, background: status.completed ? '#e0ffe0' : status.scheduled ? '#e6f0ff' : '#fff', borderRadius: 6, padding: '6px 8px'}}>
+                    <span style={{marginRight: 8}}>{status.completed ? '✓' : 'S'}</span>
+                    <span style={{flex: 1}}>{subtask.text}</span>
+                    <span style={{marginRight: 8, color: '#888', fontSize: 12}}>Subtask</span>
+                    <button style={{marginRight: 4, cursor: 'grab'}} draggable onDragStart={e => handleSidebarDragStart(e, subtask)}>⠿</button>
+                    <button style={{color: '#c00', background: 'none', border: 'none', cursor: 'pointer'}}>🗑️</button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
           {/* Left Week Switcher (hidden) */}
           <div className="week-switcher" style={{ display: 'none' }}></div>
         </div>
@@ -383,8 +453,8 @@ const WeeklyPlanner = ({
                     <div
                       key={`${day}-${timeSlot}`}
                       className="timetable-cell"
-                      onDrop={(e) => handleDrop(e, day, timeSlot)}
-                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={e => handleDrop(e, day, timeSlot)}
+                      onDragOver={e => e.preventDefault()}
                     >
                       {getTasksByDayAndWeek(day)
                         .filter(event => {

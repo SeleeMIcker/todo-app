@@ -6,6 +6,7 @@ import MonthlyDashboard from './components/MonthlyDashboard'
 import MonthlyTimetable from './components/MonthlyTimetable'
 import WeeklyPlanner from './components/WeeklyPlanner'
 import { useTaskStore } from './contexts/TaskStore.jsx'
+import GoalFocusPage from './components/GoalFocusPage'
 
 function App() {
   // Task store
@@ -73,6 +74,10 @@ function App() {
 
   // Add selectedDate state
   const [selectedDate, setSelectedDate] = useState(null)
+
+  // Add state for focus mode and selected goal for focus
+  const [focusGoalId, setFocusGoalId] = useState(null)
+  const [focusMode, setFocusMode] = useState(false)
 
   // Todo functions
   const addTodo = () => {
@@ -452,6 +457,16 @@ function App() {
     setTimetableView('dashboard')
   }
 
+  // Focus handler
+  const focusOnGoal = (goalId) => {
+    setFocusGoalId(goalId)
+    setFocusMode(true)
+  }
+  const exitFocusMode = () => {
+    setFocusMode(false)
+    setFocusGoalId(null)
+  }
+
   return (
     <div className="app">
       <div className="layout">
@@ -688,6 +703,7 @@ function App() {
                   todos={todos}
                   onViewMonth={navigateToDashboard}
                   selectedDate={selectedDate}
+                  goals={goals}
                 />
               )}
             </div>
@@ -705,259 +721,273 @@ function App() {
                   </button>
                 )}
               </div>
-
-              {/* Goal List View */}
-              {goalManagementMode === 'list' && (
-                <div className="goal-list-view">
-                  <div className="goal-actions">
-                    <div className="goal-input-section">
-                      <input
-                        type="text"
-                        value={goalInput}
-                        onChange={(e) => setGoalInput(e.target.value)}
-                        placeholder="Enter your goal..."
-                        className="goal-input"
-                      />
-                      <input
-                        type="date"
-                        value={goalDeadline}
-                        onChange={(e) => setGoalDeadline(e.target.value)}
-                        className="deadline-input"
-                      />
-                      <button onClick={addGoal} className="add-button">
-                        Add Goal
-                      </button>
-                    </div>
-                    <button className="ai-assistant-btn">
-                      🤖 AI Goal Assistant
-                    </button>
-                  </div>
-
-                  <div className="goals-grid">
-                    {goals.length === 0 ? (
-                      <p className="empty-message">No goals set yet. Create your first goal above!</p>
-                    ) : (
-                      goals.map(goal => (
-                        <div key={goal.id} className={`goal-card ${selectedGoalId === goal.id ? 'selected' : ''}`}>
-                          <div className="goal-card-header">
-                            <h3>{goal.title}</h3>
-                            <div className="goal-card-actions">
-                              <button 
-                                onClick={() => focusOnGoal(goal.id)}
-                                className="focus-btn"
-                                title="Focus on this goal"
-                              >
-                                🎯 Focus
-                              </button>
-                              <button 
-                                onClick={() => deleteGoal(goal.id)}
-                                className="delete-btn"
-                                title="Delete goal"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="goal-card-info">
-                            <div className="goal-deadline">
-                              Deadline: {new Date(goal.deadline).toLocaleDateString()}
-                            </div>
-                            <div className="goal-progress">
-                              Progress: {goal.progress}%
-                              <div className="progress-bar">
-                                <div 
-                                  className="progress-fill" 
-                                  style={{width: `${goal.progress}%`}}
-                                ></div>
-                              </div>
-                            </div>
-                            <div className="goal-stats">
-                              Sub-tasks: {goal.subTasks.filter(st => st.completed).length}/{goal.subTasks.length} done
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {goals.length > 0 && (
-                    <div className="stats">
-                      <p>
-                        Total Goals: {goals.length} | 
-                        Completed: {goals.filter(goal => goal.completed).length} | 
-                        Average Progress: {Math.round(goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length)}%
-                      </p>
-                    </div>
-                  )}
-                </div>
+              {/* Focus Mode Page */}
+              {focusMode && (
+                <GoalFocusPage
+                  goal={goals.find(g => g.id === focusGoalId)}
+                  newSubTaskText={newSubTaskText}
+                  setNewSubTaskText={setNewSubTaskText}
+                  editingSubTask={editingSubTask}
+                  setEditingSubTask={setEditingSubTask}
+                  addSubTask={addSubTask}
+                  editSubTask={editSubTask}
+                  deleteSubTask={deleteSubTask}
+                  toggleSubTask={toggleSubTask}
+                  onBack={exitFocusMode}
+                />
               )}
-
-              {/* Goal Detail View */}
-              {goalManagementMode === 'detail' && getSelectedGoal() && (
-                <div className="goal-detail-view">
-                  <div className="selected-goal-header">
-                    <h3>🎯 {getSelectedGoal().title}</h3>
-                    <div className="selected-goal-info">
-                      <span>Deadline: {new Date(getSelectedGoal().deadline).toLocaleDateString()}</span>
-                      <span>Progress: {getSelectedGoal().progress}%</span>
-                    </div>
-                  </div>
-
-                  {/* Goals View Mode Selector */}
-                  <div className="goals-view-toggle">
-                    <button
-                      className={goalViewMode === 'checklist' ? 'toggle-btn active' : 'toggle-btn'}
-                      onClick={() => setGoalViewMode('checklist')}
-                    >
-                      📋 Checklist View
-                    </button>
-                    <button
-                      className={goalViewMode === 'timeline' ? 'toggle-btn active' : 'toggle-btn'}
-                      onClick={() => setGoalViewMode('timeline')}
-                    >
-                      🕐 Timeline View
-                    </button>
-                  </div>
-
-                  {/* Goal Content */}
-                  <div className="goal-content">
-                    {!getSelectedGoal().completed && (
-                      <div className="progress-section">
-                        <div className="progress-bar">
-                          <div 
-                            className="progress-fill" 
-                            style={{width: `${getSelectedGoal().progress}%`}}
-                          ></div>
+              {/* Goal List View and Detail View only if not in focus mode */}
+              {!focusMode && (
+                <>
+                  {goalManagementMode === 'list' && (
+                    <div className="goal-list-view">
+                      <div className="goal-actions">
+                        <div className="goal-input-section">
+                          <input
+                            type="text"
+                            value={goalInput}
+                            onChange={(e) => setGoalInput(e.target.value)}
+                            placeholder="Enter your goal..."
+                            className="goal-input"
+                          />
+                          <input
+                            type="date"
+                            value={goalDeadline}
+                            onChange={(e) => setGoalDeadline(e.target.value)}
+                            className="deadline-input"
+                          />
+                          <button onClick={addGoal} className="add-button">
+                            Add Goal
+                          </button>
                         </div>
-                        <div className="progress-text">Progress: {getSelectedGoal().progress}%</div>
+                        <button className="ai-assistant-btn">
+                          🤖 AI Goal Assistant
+                        </button>
                       </div>
-                    )}
-
-                    {/* Timeline View */}
-                    {goalViewMode === 'timeline' && !getSelectedGoal().completed && (
-                      <div className="timeline-view">
-                        <div className="timeline-container">
-                          {getSelectedGoal().milestones.map((milestone) => (
-                            <div key={milestone.id} className="timeline-item">
-                              <div className={`timeline-marker ${milestone.completed ? 'completed' : ''}`}>
-                                {milestone.completed ? '✅' : '○'}
-                              </div>
-                              <div className="timeline-content">
-                                <div className="timeline-text">{milestone.text}</div>
-                                {milestone.completedAt && (
-                                  <div className="timeline-date">
-                                    Completed: {new Date(milestone.completedAt).toLocaleDateString()}
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => toggleMilestone(getSelectedGoal().id, milestone.id)}
-                                className="timeline-toggle-btn"
-                              >
-                                {milestone.completed ? 'Undo' : 'Complete'}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Enhanced Checklist View */}
-                    {goalViewMode === 'checklist' && !getSelectedGoal().completed && (
-                      <div className="checklist-view">
-                        <div className="sub-tasks-section">
-                          <h4>📋 Sub-tasks ({getSelectedGoal().subTasks.filter(st => st.completed).length}/{getSelectedGoal().subTasks.length} done)</h4>
-                          
-                          {/* Add new sub-task */}
-                          <div className="add-item-section">
-                            <input
-                              type="text"
-                              value={newSubTaskText}
-                              onChange={(e) => setNewSubTaskText(e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  addSubTask(getSelectedGoal().id)
-                                }
-                              }}
-                              placeholder="Add a new sub-task..."
-                              className="add-item-input"
-                            />
-                            <button 
-                              onClick={() => addSubTask(getSelectedGoal().id)}
-                              className="add-item-btn"
-                              disabled={newSubTaskText.trim() === ''}
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          {/* Sub-tasks list */}
-                          {getSelectedGoal().subTasks.map(subTask => (
-                            <div key={subTask.id} className="sub-task-item">
-                              <input
-                                type="checkbox"
-                                checked={subTask.completed}
-                                onChange={() => toggleSubTask(getSelectedGoal().id, subTask.id)}
-                                className="sub-task-checkbox"
-                              />
-                              
-                              {editingSubTask === subTask.id ? (
-                                <div className="edit-item-section">
-                                  <input
-                                    type="text"
-                                    defaultValue={subTask.text}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter') {
-                                        editSubTask(getSelectedGoal().id, subTask.id, e.target.value)
-                                      }
-                                    }}
-                                    onBlur={(e) => editSubTask(getSelectedGoal().id, subTask.id, e.target.value)}
-                                    className="edit-item-input"
-                                    autoFocus
-                                  />
+                      <div className="goals-grid">
+                        {goals.length === 0 ? (
+                          <p className="empty-message">No goals set yet. Create your first goal above!</p>
+                        ) : (
+                          goals.map(goal => (
+                            <div key={goal.id} className={`goal-card ${selectedGoalId === goal.id ? 'selected' : ''}`}>
+                              <div className="goal-card-header">
+                                <h3>{goal.title}</h3>
+                                <div className="goal-card-actions">
                                   <button 
-                                    onClick={() => setEditingSubTask(null)}
-                                    className="edit-item-btn"
+                                    onClick={() => focusOnGoal(goal.id)}
+                                    className="focus-btn"
+                                    title="Focus on this goal"
                                   >
-                                    ✕
+                                    🎯 Focus
+                                  </button>
+                                  <button 
+                                    onClick={() => deleteGoal(goal.id)}
+                                    className="delete-btn"
+                                    title="Delete goal"
+                                  >
+                                    🗑️
                                   </button>
                                 </div>
-                              ) : (
-                                <span className={`sub-task-text ${subTask.completed ? 'completed' : ''}`}>
-                                  {subTask.text}
-                                </span>
-                              )}
-                              
-                              {subTask.completedAt && (
-                                <span className="sub-task-date">
-                                  {new Date(subTask.completedAt).toLocaleDateString()}
-                                </span>
-                              )}
-                              
-                              <div className="item-actions">
-                                <button
-                                  onClick={() => setEditingSubTask(subTask.id)}
-                                  className="edit-btn"
-                                  title="Edit"
-                                >
-                                  ✏️
-                                </button>
-                                <button
-                                  onClick={() => deleteSubTask(getSelectedGoal().id, subTask.id)}
-                                  className="delete-btn"
-                                  title="Delete"
-                                >
-                                  🗑️
-                                </button>
+                              </div>
+                              <div className="goal-card-info">
+                                <div className="goal-deadline">
+                                  Deadline: {new Date(goal.deadline).toLocaleDateString()}
+                                </div>
+                                <div className="goal-progress">
+                                  Progress: {goal.progress}%
+                                  <div className="progress-bar">
+                                    <div 
+                                      className="progress-fill" 
+                                      style={{width: `${goal.progress}%`}}
+                                    ></div>
+                                  </div>
+                                </div>
+                                <div className="goal-stats">
+                                  Sub-tasks: {goal.subTasks.filter(st => st.completed).length}/{goal.subTasks.length} done
+                                </div>
                               </div>
                             </div>
-                          ))}
+                          ))
+                        )}
+                      </div>
+                      {goals.length > 0 && (
+                        <div className="stats">
+                          <p>
+                            Total Goals: {goals.length} | 
+                            Completed: {goals.filter(goal => goal.completed).length} | 
+                            Average Progress: {Math.round(goals.reduce((sum, goal) => sum + goal.progress, 0) / goals.length)}%
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {/* Goal Detail View */}
+                  {goalManagementMode === 'detail' && getSelectedGoal() && (
+                    <div className="goal-detail-view">
+                      <div className="selected-goal-header">
+                        <h3>🎯 {getSelectedGoal().title}</h3>
+                        <div className="selected-goal-info">
+                          <span>Deadline: {new Date(getSelectedGoal().deadline).toLocaleDateString()}</span>
+                          <span>Progress: {getSelectedGoal().progress}%</span>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </div>
+
+                      {/* Goals View Mode Selector */}
+                      <div className="goals-view-toggle">
+                        <button
+                          className={goalViewMode === 'checklist' ? 'toggle-btn active' : 'toggle-btn'}
+                          onClick={() => setGoalViewMode('checklist')}
+                        >
+                          📋 Checklist View
+                        </button>
+                        <button
+                          className={goalViewMode === 'timeline' ? 'toggle-btn active' : 'toggle-btn'}
+                          onClick={() => setGoalViewMode('timeline')}
+                        >
+                          🕐 Timeline View
+                        </button>
+                      </div>
+
+                      {/* Goal Content */}
+                      <div className="goal-content">
+                        {!getSelectedGoal().completed && (
+                          <div className="progress-section">
+                            <div className="progress-bar">
+                              <div 
+                                className="progress-fill" 
+                                style={{width: `${getSelectedGoal().progress}%`}}
+                              ></div>
+                            </div>
+                            <div className="progress-text">Progress: {getSelectedGoal().progress}%</div>
+                          </div>
+                        )}
+
+                        {/* Timeline View */}
+                        {goalViewMode === 'timeline' && !getSelectedGoal().completed && (
+                          <div className="timeline-view">
+                            <div className="timeline-container">
+                              {getSelectedGoal().milestones.map((milestone) => (
+                                <div key={milestone.id} className="timeline-item">
+                                  <div className={`timeline-marker ${milestone.completed ? 'completed' : ''}`}>
+                                    {milestone.completed ? '✅' : '○'}
+                                  </div>
+                                  <div className="timeline-content">
+                                    <div className="timeline-text">{milestone.text}</div>
+                                    {milestone.completedAt && (
+                                      <div className="timeline-date">
+                                        Completed: {new Date(milestone.completedAt).toLocaleDateString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => toggleMilestone(getSelectedGoal().id, milestone.id)}
+                                    className="timeline-toggle-btn"
+                                  >
+                                    {milestone.completed ? 'Undo' : 'Complete'}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Enhanced Checklist View */}
+                        {goalViewMode === 'checklist' && !getSelectedGoal().completed && (
+                          <div className="checklist-view">
+                            <div className="sub-tasks-section">
+                              <h4>📋 Sub-tasks ({getSelectedGoal().subTasks.filter(st => st.completed).length}/{getSelectedGoal().subTasks.length} done)</h4>
+                              
+                              {/* Add new sub-task */}
+                              <div className="add-item-section">
+                                <input
+                                  type="text"
+                                  value={newSubTaskText}
+                                  onChange={(e) => setNewSubTaskText(e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      addSubTask(getSelectedGoal().id)
+                                    }
+                                  }}
+                                  placeholder="Add a new sub-task..."
+                                  className="add-item-input"
+                                />
+                                <button 
+                                  onClick={() => addSubTask(getSelectedGoal().id)}
+                                  className="add-item-btn"
+                                  disabled={newSubTaskText.trim() === ''}
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {/* Sub-tasks list */}
+                              {getSelectedGoal().subTasks.map(subTask => (
+                                <div key={subTask.id} className="sub-task-item">
+                                  <input
+                                    type="checkbox"
+                                    checked={subTask.completed}
+                                    onChange={() => toggleSubTask(getSelectedGoal().id, subTask.id)}
+                                    className="sub-task-checkbox"
+                                  />
+                                  
+                                  {editingSubTask === subTask.id ? (
+                                    <div className="edit-item-section">
+                                      <input
+                                        type="text"
+                                        defaultValue={subTask.text}
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') {
+                                            editSubTask(getSelectedGoal().id, subTask.id, e.target.value)
+                                          }
+                                        }}
+                                        onBlur={(e) => editSubTask(getSelectedGoal().id, subTask.id, e.target.value)}
+                                        className="edit-item-input"
+                                        autoFocus
+                                      />
+                                      <button 
+                                        onClick={() => setEditingSubTask(null)}
+                                        className="edit-item-btn"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className={`sub-task-text ${subTask.completed ? 'completed' : ''}`}>
+                                      {subTask.text}
+                                    </span>
+                                  )}
+                                  
+                                  {subTask.completedAt && (
+                                    <span className="sub-task-date">
+                                      {new Date(subTask.completedAt).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                  
+                                  <div className="item-actions">
+                                    <button
+                                      onClick={() => setEditingSubTask(subTask.id)}
+                                      className="edit-btn"
+                                      title="Edit"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      onClick={() => deleteSubTask(getSelectedGoal().id, subTask.id)}
+                                      className="delete-btn"
+                                      title="Delete"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
